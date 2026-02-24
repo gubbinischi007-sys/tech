@@ -1,8 +1,8 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { run, get, all } from '../database';
-import { Applicant, CreateApplicantInput, UpdateApplicantInput, ApplicantStage } from '../models/applicant';
-import { sendEmail } from '../services/email';
+import { run, get, all } from '../database.js';
+import { Applicant, CreateApplicantInput, UpdateApplicantInput, ApplicantStage } from '../models/applicant.js';
+import { sendEmail } from '../services/email.js';
 
 const router = express.Router();
 

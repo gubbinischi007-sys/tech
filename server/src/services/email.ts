@@ -21,7 +21,7 @@ export interface EmailOptions {
 }
 
 import { v4 as uuidv4 } from 'uuid';
-import { run } from '../database';
+import { run } from '../database.js';
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
   // Always log the "email" to the database as a notification for the candidate

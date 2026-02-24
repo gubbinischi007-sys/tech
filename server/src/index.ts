@@ -1,15 +1,15 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { initDatabase } from './database';
-import { jobRoutes } from './routes/jobs';
-import { applicantRoutes } from './routes/applicants';
-import { interviewRoutes } from './routes/interviews';
-import { emailRoutes } from './routes/emails';
-import { analyticsRoutes } from './routes/analytics';
-import { notificationRoutes } from './routes/notifications';
-import employeeRoutes from './routes/employees';
-import historyRoutes from './routes/history';
+import { initDatabase } from './database.js';
+import { jobRoutes } from './routes/jobs.js';
+import { applicantRoutes } from './routes/applicants.js';
+import { interviewRoutes } from './routes/interviews.js';
+import { emailRoutes } from './routes/emails.js';
+import { analyticsRoutes } from './routes/analytics.js';
+import { notificationRoutes } from './routes/notifications.js';
+import employeeRoutes from './routes/employees.js';
+import historyRoutes from './routes/history.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;

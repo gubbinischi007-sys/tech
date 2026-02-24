@@ -1,6 +1,6 @@
 import express from 'express';
-import { get, all } from '../database';
-import { sendEmail, sendBulkEmails } from '../services/email';
+import { get, all } from '../database.js';
+import { sendEmail, sendBulkEmails } from '../services/email.js';
 
 const router = express.Router();
 
