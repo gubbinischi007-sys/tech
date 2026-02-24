@@ -3,7 +3,7 @@ import './CandidateDashboard.css';
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { applicantsApi } from '../services/api';
+import { applicantsApi, interviewsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Application {
@@ -44,7 +44,7 @@ export default function CandidateDashboard() {
 
     useEffect(() => {
         loadData();
-        const interval = setInterval(loadData, 3000); // Poll every 3 seconds
+        const interval = setInterval(loadData, 5000); // Poll every 5 seconds
         return () => clearInterval(interval);
     }, [user.email]);
 
@@ -52,7 +52,6 @@ export default function CandidateDashboard() {
         if (!user.email) return;
 
         try {
-            const { interviewsApi } = await import('../services/api');
             // Fetch applications and interviews in parallel
             const [appResponse, intResponse] = await Promise.all([
                 applicantsApi.getAll({ email: user.email }),
