@@ -312,8 +312,42 @@ api.put('/interviews/:id', async (req: any, res: any) => {
         const updates: any = { updated_at: new Date().toISOString() };
         for (const f of ['scheduled_at', 'type', 'meeting_link', 'notes', 'status'])
             if (req.body[f] !== undefined) updates[f] = req.body[f];
+
+        let shouldSendEmail = false;
+        let applicantEmail = '';
+        let applicantName = '';
+        let jobTitle = '';
+        let scheduledDate = '';
+
+        if (updates.status === 'cancelled') {
+            const { data: interview } = await sb.from('interviews').select('*').eq('id', req.params.id).single();
+            if (interview && interview.status !== 'cancelled') {
+                shouldSendEmail = true;
+                scheduledDate = interview.scheduled_at || '';
+                const { data: appData } = await sb.from('applicants').select('email, first_name').eq('id', interview.applicant_id).single();
+                if (appData) { applicantEmail = appData.email; applicantName = appData.first_name || 'Candidate'; }
+                const { data: jobData } = await sb.from('jobs').select('title').eq('id', interview.job_id).single();
+                if (jobData) { jobTitle = jobData.title; }
+            }
+        }
+
         const { data, error } = await sb.from('interviews').update(updates).eq('id', req.params.id).select().single();
         if (error) throw error;
+
+        if (shouldSendEmail && applicantEmail) {
+            const dateStr = scheduledDate ? new Date(scheduledDate).toLocaleString() : '';
+            await sendEmail({
+                to: applicantEmail,
+                subject: `Interview Cancelled - Smart-Cruiter`,
+                html: `<h2>Hello ${applicantName},</h2>
+                       <p>We are writing to let you know that your scheduled interview for the position of <strong>${jobTitle}</strong>${dateStr ? ` on <strong>${dateStr}</strong>` : ''} has unfortunately been cancelled.</p>
+                       <p>If you have any questions or if this needs to be rescheduled, please await further communication.</p>
+                       <br>
+                       <div style="margin-top: 40px; margin-bottom: 8px; color: #cbd5e1;">Best regards,</div>
+                       <div style="color: #f8fafc; font-weight: 500;">The Smart-Cruiter Team</div>`
+            });
+        }
+
         res.json(data);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 });

@@ -154,6 +154,18 @@ export default function ApplicantDetail() {
     }
   };
 
+  const handleCancelInterview = async (interviewId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this interview? This will send a notification email to the applicant.")) return;
+    try {
+      await interviewsApi.update(interviewId, { status: 'cancelled' });
+      addNotification('success', 'Interview cancelled. Applicant has been notified.');
+      loadData();
+    } catch (error) {
+      console.error('Failed to cancel interview:', error);
+      addNotification('error', 'Failed to cancel interview');
+    }
+  };
+
   const handleOnboard = async () => {
     if (!applicant) return;
     try {
@@ -582,6 +594,18 @@ export default function ApplicantDetail() {
                       <a href={interview.meeting_link} target="_blank" rel="noopener noreferrer" className="text-primary text-sm hover:underline">
                         Join Meeting →
                       </a>
+                    </div>
+                  )}
+                  {interview.status === 'scheduled' && (
+                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+                      <button
+                        onClick={() => handleCancelInterview(interview.id)}
+                        className="btn btn-sm"
+                        style={{ background: '#ef4444', padding: '6px 12px', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}
+                        title="Cancel Interview"
+                      >
+                        <X size={14} /> Cancel Interview
+                      </button>
                     </div>
                   )}
                 </div>
