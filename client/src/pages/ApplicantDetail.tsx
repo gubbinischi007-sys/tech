@@ -4,6 +4,7 @@ import { applicantsApi, interviewsApi, employeesApi } from '../services/api';
 import { format } from 'date-fns';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, FileText, Video, CheckCircle, Info, AlertTriangle, X, UserPlus } from 'lucide-react';
 import { logAction, logApplicationDecision } from '../utils/historyLogger';
+import ConfirmationModal from '../components/ConfirmationModal';
 import './ApplicantDetail.css';
 
 const COMMON_COMPANY_RULES = `1. Code of Conduct: All employees are expected to maintain the highest standards of professional conduct and ethics.
@@ -69,6 +70,7 @@ export default function ApplicantDetail() {
     notes: '',
     rules: COMMON_COMPANY_RULES,
   });
+  const [cancelInterviewId, setCancelInterviewId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const addNotification = (type: 'success' | 'error' | 'info', message: string) => {
@@ -154,15 +156,21 @@ export default function ApplicantDetail() {
     }
   };
 
-  const handleCancelInterview = async (interviewId: string) => {
-    if (!window.confirm("Are you sure you want to cancel this interview? This will send a notification email to the applicant.")) return;
+  const requestCancelInterview = (interviewId: string) => {
+    setCancelInterviewId(interviewId);
+  };
+
+  const handleConfirmCancelInterview = async () => {
+    if (!cancelInterviewId) return;
     try {
-      await interviewsApi.update(interviewId, { status: 'cancelled' });
+      await interviewsApi.update(cancelInterviewId, { status: 'cancelled' });
       addNotification('success', 'Interview cancelled. Applicant has been notified.');
       loadData();
     } catch (error) {
       console.error('Failed to cancel interview:', error);
       addNotification('error', 'Failed to cancel interview');
+    } finally {
+      setCancelInterviewId(null);
     }
   };
 
@@ -599,7 +607,7 @@ export default function ApplicantDetail() {
                   {interview.status === 'scheduled' && (
                     <div style={{ marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
                       <button
-                        onClick={() => handleCancelInterview(interview.id)}
+                        onClick={() => requestCancelInterview(interview.id)}
                         className="btn btn-sm"
                         style={{ background: '#ef4444', padding: '6px 12px', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}
                         title="Cancel Interview"
@@ -721,6 +729,17 @@ export default function ApplicantDetail() {
           </div>
         ))}
       </div>
+
+      <ConfirmationModal
+        isOpen={cancelInterviewId !== null}
+        onClose={() => setCancelInterviewId(null)}
+        onConfirm={handleConfirmCancelInterview}
+        title="Cancel Interview"
+        message="Are you sure you want to cancel this interview? This action will immediately send a cancellation email to the applicant."
+        type="danger"
+        confirmLabel="Yes, Cancel Interview"
+        cancelLabel="Keep Interview"
+      />
     </div>
   );
 }
