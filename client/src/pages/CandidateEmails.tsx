@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { notificationsApi, applicantsApi, employeesApi } from '../services/api';
+import { notificationsApi, applicantsApi, employeesApi, historyApi } from '../services/api';
 import { Link } from 'react-router-dom';
 import { Mail, Clock, CheckCircle, AlertCircle, ArrowLeft, XCircle, Trash2, CheckSquare, Square } from 'lucide-react';
 import { logApplicationDecision } from '../utils/historyLogger';
@@ -166,30 +166,60 @@ export default function CandidateEmails() {
     };
 
     useEffect(() => {
-        if (selectedEmail && selectedEmail.subject.toLowerCase().includes('offer')) {
-            const match = selectedEmail.message.match(/candidate\/applications\/([a-zA-Z0-9-]+)\/status/);
-            if (match && match[1]) {
-                applicantsApi.getById(match[1])
-                    .then(res => {
+        const checkOfferStatus = async () => {
+            if (selectedEmail && selectedEmail.subject.toLowerCase().includes('offer')) {
+                const match = selectedEmail.message.match(/candidate\/applications\/([a-zA-Z0-9-]+)\/status/);
+                const applicantId = match ? match[1] : null;
+
+                try {
+                    // 1. Try to get current applicant record
+                    if (applicantId) {
+                        const res = await applicantsApi.getById(applicantId);
                         if (res.data) {
                             setOfferRules(res.data.offer_rules || null);
                             setApplicantOfferStatus(res.data.offer_status || 'pending');
                             setApplicant(res.data);
+                            return; // Found current record
                         }
-                    })
-                    .catch(err => {
-                        console.error("Failed to fetch offer details", err);
-                        setOfferRules(null);
+                    }
+                } catch (err) {
+                    console.error("Applicant record not found, checking history...", err);
+                }
+
+                // 2. Fallback: Check history if record is gone or missing
+                try {
+                    const historyRes = await historyApi.getAll(user.email!);
+                    const history = historyRes.data || [];
+
+                    // Match by job title since notification usually has it
+                    // Extract job title from subject: "Job Offer from Smart-Cruiter" -> might need better matching
+                    // Actually, notifications usually contain the job title in the message
+                    const historyRecord = history.find((h: any) =>
+                        selectedEmail.message.includes(h.job_title) ||
+                        selectedEmail.subject.includes(h.job_title)
+                    );
+
+                    if (historyRecord) {
+                        setApplicantOfferStatus(historyRecord.status.toLowerCase());
+                        setApplicant({ ...historyRecord, id: applicantId }); // Partial mock
+                    } else {
                         setApplicantOfferStatus(null);
                         setApplicant(null);
-                    });
+                    }
+                } catch (historyErr) {
+                    console.error("Failed to check history", historyErr);
+                    setApplicantOfferStatus(null);
+                    setApplicant(null);
+                }
+            } else {
+                setOfferRules(null);
+                setApplicantOfferStatus(null);
+                setApplicant(null);
             }
-        } else {
-            setOfferRules(null);
-            setApplicantOfferStatus(null);
-            setApplicant(null);
-        }
-    }, [selectedEmail]);
+        };
+
+        checkOfferStatus();
+    }, [selectedEmail, user.email]);
 
     return (
         <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '20px', display: 'flex', flexDirection: 'column', minHeight: '80vh' }}>
@@ -282,7 +312,7 @@ export default function CandidateEmails() {
                             </div>
 
                             {/* Action Area (for Offers) */}
-                            {selectedEmail.subject.toLowerCase().includes('offer') && selectedEmail.message.includes('candidate/applications/') && (applicantOfferStatus === 'pending' || !applicantOfferStatus) && (
+                            {selectedEmail.subject.toLowerCase().includes('offer') && selectedEmail.message.includes('candidate/applications/') && applicantOfferStatus === 'pending' && (
                                 <div className="border-t border-[#ffffff10] pt-8" style={{ marginTop: '30px' }}>
                                     <div className="bg-[#1e293b]/40 rounded-xl p-8 border border-[#ffffff08]">
                                         <h3 className="text-lg font-semibold text-white mb-6 uppercase tracking-wider text-sm opacity-80">

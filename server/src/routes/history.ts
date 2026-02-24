@@ -7,7 +7,18 @@ const router = Router();
 // GET all history
 router.get('/', async (req, res) => {
     try {
-        const history = await all('SELECT * FROM application_history ORDER BY date DESC');
+        const { email } = req.query;
+        let query = 'SELECT * FROM application_history';
+        const params: any[] = [];
+
+        if (email) {
+            query += ' WHERE email = ?';
+            params.push(email);
+        }
+
+        query += ' ORDER BY date DESC';
+
+        const history = await all(query, params);
         res.json(history);
     } catch (error) {
         console.error('Failed to fetch history:', error);
@@ -52,6 +63,16 @@ router.delete('/', async (req, res) => {
     } catch (error) {
         console.error('Failed to clear history:', error);
         res.status(500).json({ error: 'Failed to clear history' });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    try {
+        await run('DELETE FROM application_history WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Record deleted successfully' });
+    } catch (error) {
+        console.error('Failed to delete history record:', error);
+        res.status(500).json({ error: 'Failed to delete history record' });
     }
 });
 

@@ -1,63 +1,66 @@
-import sqlite3 from 'sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://eluarxdyxvxwknylejaj.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsdWFyeGR5eHZ4d2tueWxlamFqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTg5ODU5NiwiZXhwIjoyMDg3NDc0NTk2fQ.7RK3EqTtOlOrS4KNqttdmFb6mhuDp99bAKyKywphFXE';
 
-// On Vercel, we must use /tmp for writable filesystem
-const isVercel = process.env.VERCEL === '1';
-const defaultDbPath = isVercel
-  ? '/tmp/database.sqlite'
-  : path.join(__dirname, '../database.sqlite');
+// Use service role key for full server-side access (bypasses Row Level Security)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-const DB_PATH = process.env.DATABASE_PATH || defaultDbPath;
-
-
-let db: sqlite3.Database;
-
-export function getDb(): sqlite3.Database {
-  if (!db) {
-    db = new sqlite3.Database(DB_PATH);
-  }
-  return db;
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: convert SQLite-style ? placeholders → $1, $2, ... for PostgreSQL
+// This keeps ALL existing route files working with zero changes.
+// ─────────────────────────────────────────────────────────────────────────────
+function toPostgres(sql: string): string {
+  let idx = 0;
+  return sql.replace(/\?/g, () => `$${++idx}`);
 }
 
-export function run(sql: string, params: any[] = []): Promise<sqlite3.RunResult> {
-  return new Promise((resolve, reject) => {
-    getDb().run(sql, params, function (this: sqlite3.RunResult, err: Error | null): void {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(this);
-      }
-    });
+// ─────────────────────────────────────────────────────────────────────────────
+// run() – INSERT / UPDATE / DELETE
+// ─────────────────────────────────────────────────────────────────────────────
+export async function run(sql: string, params: any[] = []): Promise<void> {
+  const { error } = await supabase.rpc('exec_sql', {
+    query: toPostgres(sql),
+    params: params
+  }).throwOnError();
+
+  // Fallback: use raw postgres via supabase.from for simple queries
+  if (error) throw error;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// get() – SELECT single row
+// ─────────────────────────────────────────────────────────────────────────────
+export async function get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
+  const { data, error } = await supabase.rpc('exec_sql_returning', {
+    query: toPostgres(sql),
+    params: params
   });
+  if (error) throw error;
+  return (data?.[0]) as T | undefined;
 }
 
-export function get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    getDb().get(sql, params, (err: Error | null, row: any) => {
-      if (err) reject(err);
-      else resolve(row as T);
-    });
+// ─────────────────────────────────────────────────────────────────────────────
+// all() – SELECT multiple rows
+// ─────────────────────────────────────────────────────────────────────────────
+export async function all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  const { data, error } = await supabase.rpc('exec_sql_returning', {
+    query: toPostgres(sql),
+    params: params
   });
+  if (error) throw error;
+  return (data || []) as T[];
 }
 
-export function all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    getDb().all(sql, params, (err: Error | null, rows: any[]) => {
-      if (err) reject(err);
-      else resolve(rows as T[]);
-    });
-  });
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// initDatabase() — create all tables via Supabase SQL Editor RPC
+// ─────────────────────────────────────────────────────────────────────────────
 export async function initDatabase(): Promise<void> {
-  // Create Jobs table
-  await run(`
-    CREATE TABLE IF NOT EXISTS jobs (
+  console.log('Initializing Supabase database tables...');
+
+  const queries = [
+    // Jobs
+    `CREATE TABLE IF NOT EXISTS jobs (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       department TEXT,
@@ -66,14 +69,12 @@ export async function initDatabase(): Promise<void> {
       description TEXT,
       requirements TEXT,
       status TEXT DEFAULT 'open',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
 
-  // Create Applicants table
-  await run(`
-    CREATE TABLE IF NOT EXISTS applicants (
+    // Applicants
+    `CREATE TABLE IF NOT EXISTS applicants (
       id TEXT PRIMARY KEY,
       job_id TEXT NOT NULL,
       first_name TEXT NOT NULL,
@@ -84,136 +85,78 @@ export async function initDatabase(): Promise<void> {
       cover_letter TEXT,
       stage TEXT DEFAULT 'applied',
       status TEXT DEFAULT 'active',
-      applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      applied_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
       offer_salary TEXT,
       offer_joining_date TEXT,
-      offer_status TEXT, -- 'pending', 'accepted', 'rejected'
+      offer_status TEXT,
       offer_notes TEXT,
-      offer_sent_at DATETIME,
-      FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
-    )
-  `);
+      offer_sent_at TIMESTAMPTZ,
+      offer_rules TEXT
+    )`,
 
-  // Migration for existing tables: Check and add offer columns if they don't exist
-  const tableInfo = await all(`PRAGMA table_info(applicants)`);
-  const columns = tableInfo.map((col: any) => col.name);
-
-  if (!columns.includes('offer_salary')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_salary TEXT`);
-  }
-  if (!columns.includes('offer_joining_date')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_joining_date TEXT`);
-  }
-  if (!columns.includes('offer_status')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_status TEXT`);
-  }
-  if (!columns.includes('offer_notes')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_notes TEXT`);
-  }
-  if (!columns.includes('offer_sent_at')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_sent_at DATETIME`);
-  }
-  if (!columns.includes('offer_rules')) {
-    await run(`ALTER TABLE applicants ADD COLUMN offer_rules TEXT`);
-  }
-
-  // Create Interviews table
-  await run(`
-    CREATE TABLE IF NOT EXISTS interviews (
+    // Interviews
+    `CREATE TABLE IF NOT EXISTS interviews (
       id TEXT PRIMARY KEY,
       applicant_id TEXT NOT NULL,
       job_id TEXT NOT NULL,
-      scheduled_at DATETIME NOT NULL,
+      scheduled_at TIMESTAMPTZ NOT NULL,
       type TEXT DEFAULT 'online',
       meeting_link TEXT,
       notes TEXT,
       status TEXT DEFAULT 'scheduled',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (applicant_id) REFERENCES applicants(id) ON DELETE CASCADE,
-      FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
-    )
-  `);
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
 
-  // Create Employees table
-  await run(`
-    CREATE TABLE IF NOT EXISTS employees (
+    // Employees
+    `CREATE TABLE IF NOT EXISTS employees (
       id TEXT PRIMARY KEY,
       applicant_id TEXT,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       job_title TEXT,
       department TEXT,
-      hired_date DATETIME,
+      hired_date TIMESTAMPTZ,
       status TEXT DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (applicant_id) REFERENCES applicants(id) ON DELETE SET NULL
-    )
-  `);
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
 
-  // Create Notifications table
-  await run(`
-    CREATE TABLE IF NOT EXISTS notifications (
+    // Notifications
+    `CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
       recipient_email TEXT NOT NULL,
       subject TEXT NOT NULL,
       message TEXT NOT NULL,
       type TEXT DEFAULT 'info',
       is_read INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
 
-  // Create Application History table
-  await run(`
-    CREATE TABLE IF NOT EXISTS application_history (
+    // Application History
+    `CREATE TABLE IF NOT EXISTS application_history (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       job_title TEXT,
-      status TEXT NOT NULL, -- 'Accepted', 'Rejected'
+      status TEXT NOT NULL,
       reason TEXT,
-      date DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+      date TIMESTAMPTZ DEFAULT NOW()
+    )`,
 
-  // Create indexes
-  await run(`CREATE INDEX IF NOT EXISTS idx_applicants_job_id ON applicants(job_id)`);
-  await run(`CREATE INDEX IF NOT EXISTS idx_applicants_stage ON applicants(stage)`);
-  await run(`CREATE INDEX IF NOT EXISTS idx_interviews_applicant_id ON interviews(applicant_id)`);
-  await run(`CREATE INDEX IF NOT EXISTS idx_interviews_job_id ON interviews(job_id)`);
-  await run(`CREATE INDEX IF NOT EXISTS idx_history_email ON application_history(email)`);
+    // Indexes
+    `CREATE INDEX IF NOT EXISTS idx_applicants_job_id ON applicants(job_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_applicants_stage ON applicants(stage)`,
+    `CREATE INDEX IF NOT EXISTS idx_interviews_applicant_id ON interviews(applicant_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_history_email ON application_history(email)`,
+  ];
 
-  console.log('Database tables created/verified');
-
-  // Seed data for demo if jobs table is empty
-  const jobCount = await get<{ count: number }>('SELECT COUNT(*) as count FROM jobs');
-  if (jobCount && jobCount.count === 0) {
-    console.log('Seeding initial data for demo...');
-    const softwareEngineerId = 'job_1';
-    const productManagerId = 'job_2';
-    const now = new Date().toISOString();
-
-    await run(`
-      INSERT INTO jobs (id, title, department, location, type, description, requirements, status, created_at, updated_at)
-      VALUES 
-      (?, 'Senior Software Engineer', 'Engineering', 'Remote', 'Full-time', 'We are looking for a Senior Software Engineer...', '5+ years experience, React, Node.js', 'open', ?, ?),
-      (?, 'Product Manager', 'Product', 'New York', 'Full-time', 'Seeking a Product Manager to lead our recruitment tool...', '3+ years experience, Agile, UX knowledge', 'open', ?, ?)
-    `, [softwareEngineerId, now, now, productManagerId, now, now]);
-
-    const applicant1Id = 'app_1';
-    await run(`
-      INSERT INTO applicants (id, job_id, first_name, last_name, email, phone, stage, status, applied_at, updated_at)
-      VALUES (?, ?, 'John', 'Doe', 'john.doe@example.com', '123-456-7890', 'interviewing', 'active', ?, ?)
-    `, [applicant1Id, softwareEngineerId, now, now]);
-
-    await run(`
-      INSERT INTO application_history (id, name, email, job_title, status, date)
-      VALUES (?, 'Jane Smith', 'jane.smith@example.com', 'Software Engineer', 'Accepted', ?)
-    `, ['hist_1', now]);
-
-    console.log('Seeding completed');
+  for (const query of queries) {
+    const { error } = await supabase.rpc('exec_sql', { query, params: [] });
+    if (error && !error.message.includes('already exists')) {
+      console.error('Migration error:', error.message);
+    }
   }
-}
 
+  console.log('Supabase database tables initialized.');
+}

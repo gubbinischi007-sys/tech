@@ -85,7 +85,7 @@ export const employeesApi = {
 
 // History API
 export const historyApi = {
-  getAll: () => api.get('/history'),
+  getAll: (email?: string) => api.get('/history', { params: { email } }),
   create: (data: {
     name: string;
     email: string;
@@ -93,6 +93,7 @@ export const historyApi = {
     status: 'Accepted' | 'Rejected' | 'Deactivated';
     reason: string;
   }) => api.post('/history', data),
+  delete: (id: string) => api.delete(`/history/${id}`),
   clearAll: () => api.delete('/history'),
 };
 

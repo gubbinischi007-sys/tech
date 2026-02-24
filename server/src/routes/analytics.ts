@@ -6,23 +6,14 @@ const router = express.Router();
 // Get dashboard statistics
 router.get('/dashboard', async (req, res) => {
   try {
-    // Total jobs
-    const totalJobs = await get<{ count: number }>('SELECT COUNT(*) as count FROM jobs');
-    
-    // Open jobs
-    const openJobs = await get<{ count: number }>('SELECT COUNT(*) as count FROM jobs WHERE status = ?', ['open']);
-    
-    // Total applicants
-    const totalApplicants = await get<{ count: number }>('SELECT COUNT(*) as count FROM applicants');
-    
-    // Applicants by stage
+    const totalJobs = await get<{ count: string }>('SELECT COUNT(*) as count FROM jobs');
+    const openJobs = await get<{ count: string }>('SELECT COUNT(*) as count FROM jobs WHERE status = ?', ['open']);
+    const totalApplicants = await get<{ count: string }>('SELECT COUNT(*) as count FROM applicants');
+
     const applicantsByStage = await all<{ stage: string; count: number }>(
-      `SELECT stage, COUNT(*) as count 
-       FROM applicants 
-       GROUP BY stage`
+      `SELECT stage, COUNT(*) as count FROM applicants GROUP BY stage`
     );
-    
-    // Applicants by job
+
     const applicantsByJob = await all<{ job_id: string; job_title: string; count: number }>(
       `SELECT j.id as job_id, j.title as job_title, COUNT(a.id) as count
        FROM jobs j
@@ -31,27 +22,23 @@ router.get('/dashboard', async (req, res) => {
        ORDER BY count DESC
        LIMIT 10`
     );
-    
-    // Recent applicants (last 30 days)
-    const recentApplicants = await get<{ count: number }>(
-      `SELECT COUNT(*) as count 
-       FROM applicants 
-       WHERE DATE(applied_at) >= DATE('now', '-30 days')`
+
+    // PostgreSQL: use NOW() - INTERVAL
+    const recentApplicants = await get<{ count: string }>(
+      `SELECT COUNT(*) as count FROM applicants WHERE applied_at >= NOW() - INTERVAL '30 days'`
     );
-    
-    // Scheduled interviews
-    const scheduledInterviews = await get<{ count: number }>(
-      `SELECT COUNT(*) as count 
-       FROM interviews 
-       WHERE status = 'scheduled' AND scheduled_at >= datetime('now')`
+
+    // PostgreSQL: use NOW() directly
+    const scheduledInterviews = await get<{ count: string }>(
+      `SELECT COUNT(*) as count FROM interviews WHERE status = 'scheduled' AND scheduled_at >= NOW()`
     );
 
     res.json({
-      totalJobs: totalJobs?.count || 0,
-      openJobs: openJobs?.count || 0,
-      totalApplicants: totalApplicants?.count || 0,
-      recentApplicants: recentApplicants?.count || 0,
-      scheduledInterviews: scheduledInterviews?.count || 0,
+      totalJobs: parseInt(totalJobs?.count || '0'),
+      openJobs: parseInt(openJobs?.count || '0'),
+      totalApplicants: parseInt(totalApplicants?.count || '0'),
+      recentApplicants: parseInt(recentApplicants?.count || '0'),
+      scheduledInterviews: parseInt(scheduledInterviews?.count || '0'),
       applicantsByStage,
       applicantsByJob,
     });
@@ -65,10 +52,10 @@ router.get('/dashboard', async (req, res) => {
 router.get('/applicants-by-stage', async (req, res) => {
   try {
     const data = await all<{ stage: string; count: number }>(
-      `SELECT stage, COUNT(*) as count 
-       FROM applicants 
-       GROUP BY stage 
-       ORDER BY 
+      `SELECT stage, COUNT(*) as count
+       FROM applicants
+       GROUP BY stage
+       ORDER BY
          CASE stage
            WHEN 'applied' THEN 1
            WHEN 'shortlisted' THEN 2
@@ -76,6 +63,7 @@ router.get('/applicants-by-stage', async (req, res) => {
            WHEN 'hired' THEN 4
            WHEN 'declined' THEN 5
            WHEN 'withdrawn' THEN 6
+           ELSE 7
          END`
     );
     res.json(data);
@@ -88,14 +76,16 @@ router.get('/applicants-by-stage', async (req, res) => {
 // Get applicants over time
 router.get('/applicants-over-time', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const days = parseInt(req.query.days as string) || 30;
+
+    // PostgreSQL: cast to date and use parameterized INTERVAL
     const data = await all<{ date: string; count: number }>(
-      `SELECT DATE(applied_at) as date, COUNT(*) as count
+      `SELECT applied_at::date as date, COUNT(*) as count
        FROM applicants
-       WHERE DATE(applied_at) >= DATE('now', ? || ' days')
-       GROUP BY DATE(applied_at)
+       WHERE applied_at >= NOW() - ($1 || ' days')::INTERVAL
+       GROUP BY applied_at::date
        ORDER BY date ASC`,
-      [`-${days}`]
+      [days]
     );
     res.json(data);
   } catch (error) {
@@ -108,29 +98,26 @@ router.get('/applicants-over-time', async (req, res) => {
 router.get('/job-stats/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
-    
-    const totalApplicants = await get<{ count: number }>(
+
+    const totalApplicants = await get<{ count: string }>(
       'SELECT COUNT(*) as count FROM applicants WHERE job_id = ?',
       [jobId]
     );
-    
+
     const applicantsByStage = await all<{ stage: string; count: number }>(
-      `SELECT stage, COUNT(*) as count 
-       FROM applicants 
-       WHERE job_id = ?
-       GROUP BY stage`,
+      `SELECT stage, COUNT(*) as count FROM applicants WHERE job_id = ? GROUP BY stage`,
       [jobId]
     );
-    
-    const interviews = await get<{ count: number }>(
+
+    const interviews = await get<{ count: string }>(
       'SELECT COUNT(*) as count FROM interviews WHERE job_id = ?',
       [jobId]
     );
 
     res.json({
-      totalApplicants: totalApplicants?.count || 0,
+      totalApplicants: parseInt(totalApplicants?.count || '0'),
       applicantsByStage,
-      totalInterviews: interviews?.count || 0,
+      totalInterviews: parseInt(interviews?.count || '0'),
     });
   } catch (error) {
     console.error('Error fetching job statistics:', error);
@@ -139,4 +126,3 @@ router.get('/job-stats/:jobId', async (req, res) => {
 });
 
 export { router as analyticsRoutes };
-

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { History as HistoryIcon, Clock, LogIn, LogOut, User } from 'lucide-react';
+import { History as HistoryIcon, Clock, LogIn, LogOut, User, Trash2 } from 'lucide-react';
 import { historyApi } from '../services/api';
 import './History.css';
 
@@ -127,6 +127,17 @@ export default function History() {
         });
     };
 
+    const handleDeleteRecord = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this record?')) return;
+        try {
+            await historyApi.delete(id);
+            setAppHistory(prev => prev.filter(record => record.id !== id));
+        } catch (error) {
+            console.error('Failed to delete history record:', error);
+            alert('Failed to delete record');
+        }
+    };
+
     return (
         <div className="history-container">
             <div className="history-header">
@@ -160,9 +171,11 @@ export default function History() {
 
             {/* Application History Section */}
             <div className="history-section mb-8">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <User size={20} className="text-primary" /> Application Decisions
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2 m-0">
+                        <User size={20} className="text-primary" /> Application Decisions
+                    </h2>
+                </div>
 
                 <div className="history-list">
                     {appHistory.length === 0 ? (
@@ -180,11 +193,12 @@ export default function History() {
                                     <th>Status</th>
                                     <th>Reason / Note</th>
                                     <th>Date</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {appHistory.map((record, index) => (
-                                    <tr key={index}>
+                                {appHistory.map((record) => (
+                                    <tr key={record.id}>
                                         <td className="user-cell">
                                             <div className="user-avatar" style={{
                                                 background: record.status === 'Accepted' ? '#10b981' :
@@ -202,10 +216,10 @@ export default function History() {
                                         </td>
                                         <td>
                                             <span className={`px-2 py-1 rounded text-xs font-medium ${record.status === 'Accepted'
-                                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                    : record.status === 'Deactivated'
-                                                        ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                                : record.status === 'Deactivated'
+                                                    ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                                                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                                 }`}>
                                                 {record.status}
                                             </span>
@@ -222,6 +236,15 @@ export default function History() {
                                             <div className="text-xs text-gray-600">
                                                 {formatTime(record.date)}
                                             </div>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                onClick={() => handleDeleteRecord(record.id)}
+                                                className="delete-row-button"
+                                                title="Delete this record"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

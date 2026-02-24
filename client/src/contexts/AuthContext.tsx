@@ -38,12 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const email = emailInput || (role === 'hr' ? 'recruiter@company.com' : 'candidate@user.com');
     const name = nameInput || (role === 'hr' ? 'HR Manager' : 'Job Applicant');
     const timestamp = new Date().toISOString();
+    const sessionId = crypto.randomUUID();
 
     // Save to history using only localStorage as a simple 'backend' for now
     if (role === 'hr') {
       const history = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+
+      // Close any previous active sessions for this user that were left open
+      history.forEach((h: any) => {
+        if (h.email === email && h.logoutTime === null) {
+          h.logoutTime = timestamp; // Mark as ended at the time of new login
+        }
+      });
+
       history.push({
-        id: crypto.randomUUID(),
+        id: sessionId,
         email: email,
         name: name,
         loginTime: timestamp,
@@ -60,21 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('userName', name);
     if (roleTitleInput) localStorage.setItem('userRoleTitle', roleTitleInput);
     // Needed to link logout with this session later
-    localStorage.setItem('lastLoginTime', timestamp);
+    localStorage.setItem('lastSessionId', sessionId);
   };
 
   const logout = () => {
     // Update history with logout time
-    const lastLoginTime = localStorage.getItem('lastLoginTime');
-    if (lastLoginTime) {
+    const sessionId = localStorage.getItem('lastSessionId');
+    if (sessionId) {
       const history = JSON.parse(localStorage.getItem('loginHistory') || '[]');
-      // Find the record for this session (simplify: find last open session)
-      const lastSessionIndex = history.findIndex((h: any) => h.loginTime === lastLoginTime && h.logoutTime === null);
-      if (lastSessionIndex !== -1) {
-        history[lastSessionIndex].logoutTime = new Date().toISOString();
+      const sessionIndex = history.findIndex((h: any) => h.id === sessionId);
+      if (sessionIndex !== -1) {
+        history[sessionIndex].logoutTime = new Date().toISOString();
         localStorage.setItem('loginHistory', JSON.stringify(history));
       }
-      localStorage.removeItem('lastLoginTime');
+      localStorage.removeItem('lastSessionId');
     }
 
     const newUser: User = { name: null, role: null, email: null, isAuthenticated: false };

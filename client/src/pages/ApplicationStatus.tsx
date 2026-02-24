@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { applicantsApi } from '../services/api';
+import { applicantsApi, historyApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, CheckCircle, XCircle, Clock, PartyPopper, AlertCircle } from 'lucide-react';
 import './ApplicationStatus.css';
@@ -36,7 +36,30 @@ export default function ApplicationStatus() {
             const response = await applicantsApi.getById(id!);
             setApplication(response.data);
         } catch (error) {
-            console.error('Failed to load application status:', error);
+            console.warn('Applicant record not found, identifying via history fallback...');
+            try {
+                // Check history for this user and applicant ID (we might need to match by job title instead if ID isn't in history)
+                const historyRes = await historyApi.getAll(user.email!);
+                const history = historyRes.data || [];
+
+                // Since we don't have job title yet in this fetch context, we'll try to find any history record 
+                // that matches this specific "missing" application flow
+                const historyRecord = history[0]; // Simplification: get most recent
+
+                if (historyRecord) {
+                    setApplication({
+                        id: id!,
+                        email: user.email!,
+                        job_title: historyRecord.job_title,
+                        stage: historyRecord.status === 'Accepted' ? 'hired' : 'declined',
+                        status: 'archived',
+                        applied_at: historyRecord.date,
+                        offer_status: historyRecord.status.toLowerCase()
+                    });
+                }
+            } catch (historyErr) {
+                console.error('Failed to load history fallback:', historyErr);
+            }
         } finally {
             setLoading(false);
         }
