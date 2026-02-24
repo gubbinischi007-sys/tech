@@ -105,24 +105,33 @@ api.delete('/jobs/:id', async (req: any, res: any) => {
 api.get('/applicants', async (req: any, res: any) => {
     try {
         const { job_id, stage, status, email } = req.query;
-        let q = sb.from('applicants').select('*, jobs(title)').order('applied_at', { ascending: false });
+        let q = sb.from('applicants').select('*').order('applied_at', { ascending: false });
         if (email) q = q.eq('email', email);
         if (job_id) q = q.eq('job_id', job_id);
         if (stage) q = q.eq('stage', stage);
         if (status) q = q.eq('status', status);
         const { data, error } = await q;
         if (error) throw error;
-        // Flatten job_title from nested join
-        const rows = (data || []).map((a: any) => ({ ...a, job_title: a.jobs?.title, jobs: undefined }));
+
+        const { data: jobs } = await sb.from('jobs').select('id, title');
+        const jobsMap = Object.fromEntries((jobs || []).map((j: any) => [j.id, j.title]));
+
+        const rows = (data || []).map((a: any) => ({ ...a, job_title: jobsMap[a.job_id] }));
         res.json(rows);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
 api.get('/applicants/:id', async (req: any, res: any) => {
     try {
-        const { data, error } = await sb.from('applicants').select('*, jobs(title, department, location)').eq('id', req.params.id).single();
+        const { data, error } = await sb.from('applicants').select('*').eq('id', req.params.id).single();
         if (error) return res.status(404).json({ error: 'Applicant not found' });
-        res.json({ ...data, job_title: data.jobs?.title, jobs: undefined });
+
+        let jobDetails = {};
+        if (data.job_id) {
+            const { data: job } = await sb.from('jobs').select('title, department, location').eq('id', data.job_id).single();
+            if (job) jobDetails = { job_title: job.title, jobs: job };
+        }
+        res.json({ ...data, ...jobDetails });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
@@ -185,8 +194,15 @@ api.patch('/applicants/:id/offer', async (req: any, res: any) => {
     try {
         const { salary, joining_date, notes, rules } = req.body;
         const now = new Date().toISOString();
-        const { data: existing } = await sb.from('applicants').select('*, jobs(title)').eq('id', req.params.id).single();
+        const { data: existing } = await sb.from('applicants').select('*').eq('id', req.params.id).single();
         if (!existing) return res.status(404).json({ error: 'Applicant not found' });
+
+        let jobTitle = 'Unknown Job';
+        if (existing.job_id) {
+            const { data: job } = await sb.from('jobs').select('title').eq('id', existing.job_id).single();
+            if (job) jobTitle = job.title;
+        }
+
         const { data, error } = await sb.from('applicants').update({
             offer_salary: salary, offer_joining_date: joining_date, offer_notes: notes,
             offer_rules: rules, offer_status: 'pending', offer_sent_at: now, updated_at: now
@@ -194,7 +210,7 @@ api.patch('/applicants/:id/offer', async (req: any, res: any) => {
         if (error) throw error;
         await sendEmail({
             to: existing.email, subject: 'Job Offer from Smart-Cruiter',
-            html: `<h2>Congratulations ${existing.first_name}!</h2><p>You have been offered <strong>${existing.jobs?.title}</strong>.</p><p>Salary: ${salary} | Joining: ${joining_date}</p>`
+            html: `<h2>Congratulations ${existing.first_name}!</h2><p>You have been offered <strong>${jobTitle}</strong>.</p><p>Salary: ${salary} | Joining: ${joining_date}</p>`
         });
         res.json({ message: 'Offer sent', applicant: data });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
