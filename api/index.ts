@@ -244,7 +244,12 @@ api.patch('/applicants/:id/offer', async (req: any, res: any) => {
         if (error) throw error;
         await sendEmail({
             to: existing.email, subject: 'Job Offer from Smart-Cruiter',
-            html: `<h2>Congratulations ${existing.first_name}!</h2><p>You have been offered <strong>${jobTitle}</strong>.</p><p>Salary: ${salary} | Joining: ${joining_date}</p>`
+            html: `<h2>Congratulations ${existing.first_name}!</h2>
+                   <p>You have been offered <strong>${jobTitle}</strong>.</p>
+                   <p>Salary: ${salary} | Joining: ${joining_date}</p>
+                   <p>Notes: ${notes}</p>
+                   <p><a href="${process.env.CLIENT_URL || 'https://recruiter-v1.vercel.app'}/candidate/applications/${req.params.id}/status" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:white;text-decoration:none;border-radius:5px;">View Offer Details</a></p>
+                   <p>Please log in to your candidate dashboard to view the full offer letter and accept/reject it.</p>`
         });
         res.json({ message: 'Offer sent', applicant: data });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
