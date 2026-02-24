@@ -297,8 +297,8 @@ export default function CandidateEmails() {
                                             ''
                                         )
                                         .replace('Offer Details:', '<div style="margin-top: 20px; margin-bottom: 10px; font-weight: bold; font-size: 1.1em; font-family: \'Outfit\', sans-serif; color: white;">Offer Details:</div>')
-                                        .replace('Best regards,', '<div style="margin-top: 40px;">Best regards,</div>')
-                                        .replace('The Smart-Cruiter Team', '<div style="margin-top: -10px;">The Smart-Cruiter Team</div>')
+                                        .replace('Best regards,', '<div style="margin-top: 40px; margin-bottom: 8px; color: #cbd5e1;">Best regards,</div>')
+                                        .replace(/(The Smart-Cruiter[\w\s-]*Team)/g, '<div style="color: #f8fafc; font-weight: 500;">$1</div>')
                                         // Remove the generic "View Offer Details" button to keep user on this page (using custom actions instead)
                                         .replace(/<a\s+[^>]*>[\s\S]*?View Offer Details[\s\S]*?<\/a>/gi, '')
                                         // Inject rules below Joining Date (which is the end of the UL)
