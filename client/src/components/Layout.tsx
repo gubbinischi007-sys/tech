@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users2, LogOut, History, UserCheck, Calendar, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Users2, LogOut, History, UserCheck, Calendar, HelpCircle, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCompany } from '../contexts/CompanyContext';
 import { resetOnboarding } from './OnboardingTour';
 import OnboardingTour from './OnboardingTour';
 import { useState } from 'react';
@@ -9,6 +10,7 @@ import './Layout.css';
 export default function Layout() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { company } = useCompany();
   const [tourKey, setTourKey] = useState(0);
   const [forceTour, setForceTour] = useState(false);
 
@@ -38,6 +40,25 @@ export default function Layout() {
             <Link to="/admin/dashboard" className="logo">
               <img src="/logo.png" alt="SmartCruiter" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} />
               <span className="logo-text">SmartCruiter</span>
+              {company && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(99,102,241,0.12)',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                  color: '#818cf8',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '20px',
+                  letterSpacing: '0.01em',
+                  marginLeft: '6px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  <Building2 size={10} /> {company.name}
+                </span>
+              )}
             </Link>
             <div className="nav-links">
               {navLinks.map((link) => {

@@ -20,6 +20,25 @@ import CandidateInterviews from './pages/CandidateInterviews';
 import History from './pages/History';
 import CandidateEmails from './pages/CandidateEmails';
 import Employees from './pages/Employees';
+import CompanySetup from './pages/CompanySetup';
+import { useCompany } from './contexts/CompanyContext';
+import { useAuth } from './contexts/AuthContext';
+
+/** Redirects HR users without a company to the company setup page */
+function CompanyGuard({ children }: { children: JSX.Element }) {
+  const { user } = useAuth();
+  const { company, loading } = useCompany();
+
+  // Still loading company info — let ProtectedRoute's spinner handle this
+  if (loading) return null;
+
+  // HR user with no company → send to setup
+  if (user.role === 'hr' && !company) {
+    return <Navigate to="/company-setup" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
@@ -29,6 +48,13 @@ function App() {
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="/public/jobs/:id" element={<PublicJobDetail />} />
       <Route path="/public/jobs/:id/apply" element={<ApplyJob />} />
+
+      {/* Company Setup route (HR only, authenticated) */}
+      <Route path="/company-setup" element={
+        <ProtectedRoute allowedRole="hr">
+          <CompanySetup />
+        </ProtectedRoute>
+      } />
 
       {/* Candidate routes */}
       <Route path="/candidate" element={
@@ -44,10 +70,12 @@ function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
-      {/* Admin/HR routes */}
+      {/* Admin/HR routes — guarded by company check */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRole="hr">
-          <Layout />
+          <CompanyGuard>
+            <Layout />
+          </CompanyGuard>
         </ProtectedRoute>
       }>
         <Route index element={<Navigate to="dashboard" replace />} />
@@ -58,7 +86,6 @@ function App() {
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="applicants" element={<Applicants />} />
         <Route path="history" element={<History />} />
-
         <Route path="applicants/:id" element={<ApplicantDetail />} />
         <Route path="employees" element={<Employees />} />
         <Route path="interviews" element={<Interviews />} />

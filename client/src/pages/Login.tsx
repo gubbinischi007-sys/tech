@@ -115,7 +115,7 @@ export default function Login() {
       return;
     }
 
-    // HR requires PIN
+    // HR requires PIN (invite code = '1975' as default, will be replaced with real company codes)
     if (selectedRole === 'hr' && formData.companyPin !== '1975') {
       showError('Access Restricted', 'Invalid Company PIN. HR registration requires a valid PIN.');
       return;
@@ -123,6 +123,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
+      // Register with Supabase
       await register({
         email: formData.email.trim(),
         password: formData.password.trim(),
@@ -130,14 +131,20 @@ export default function Login() {
         role: selectedRole!,
         roleTitle: formData.roleTitle.trim() || undefined,
       });
-      showSuccess(
-        'Account Created! 🎉',
-        'Your account has been created. Please check your email to confirm your address, then sign in.'
-      );
-      setViewMode('login');
+
+      // Immediately sign in (email confirmation is disabled)
+      const profile = await login(formData.email.trim(), formData.password.trim());
+
+      // Redirect based on role
+      if (profile.role === 'hr') {
+        // HR goes to company setup (create or join workspace)
+        navigate('/company-setup');
+      } else {
+        navigate('/candidate/dashboard');
+      }
     } catch (err: any) {
       const msg = err?.message || 'Registration failed. Please try again.';
-      if (msg.includes('already registered') || msg.includes('already exists')) {
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('already been registered')) {
         showError('Already Registered', 'An account with this email already exists. Please sign in.');
       } else {
         showError('Registration Failed', msg);
