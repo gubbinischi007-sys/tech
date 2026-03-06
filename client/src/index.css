@@ -374,3 +374,82 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-sm);
 }
+
+/* ===== Onboarding Tour (driver.js) Custom Theme ===== */
+.smartcruiter-tour-popover.driver-popover {
+  background: #1e2330;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.15);
+  padding: 20px 24px;
+  max-width: 340px;
+}
+
+.smartcruiter-tour-popover .driver-popover-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.smartcruiter-tour-popover .driver-popover-description {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.smartcruiter-tour-popover .driver-popover-footer {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.smartcruiter-tour-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.smartcruiter-tour-popover .driver-popover-next-btn {
+  background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  padding: 6px 14px !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s !important;
+}
+
+.smartcruiter-tour-popover .driver-popover-next-btn:hover {
+  opacity: 0.88 !important;
+}
+
+.smartcruiter-tour-popover .driver-popover-prev-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: #94a3b8 !important;
+  font-size: 0.8rem !important;
+  padding: 6px 14px !important;
+  cursor: pointer !important;
+}
+
+.smartcruiter-tour-popover .driver-popover-close-btn {
+  color: #6b7280 !important;
+  font-size: 1.1rem !important;
+}
+
+.smartcruiter-tour-popover .driver-popover-close-btn:hover {
+  color: white !important;
+}
+
+.driver-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* ============================================== */

@@ -1,4 +1,4 @@
-import { Briefcase, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Briefcase, CheckCircle, Clock, AlertCircle, Calendar, ExternalLink } from 'lucide-react';
 import './CandidateDashboard.css';
 
 import { useEffect, useState } from 'react';
@@ -140,6 +140,56 @@ export default function CandidateDashboard() {
                 ))}
             </div>
 
+
+            {/* Shortlisted/Recommended Alert Banner */}
+            {myApplications.some(a => ['shortlisted', 'recommended'].includes(a.stage.toLowerCase())) && (
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.12) 100%)',
+                    border: '1px solid rgba(99,102,241,0.3)',
+                    borderRadius: '12px',
+                    padding: '1.25rem 1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1.25rem',
+                    marginBottom: '1.5rem',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{ background: 'rgba(99,102,241,0.2)', padding: '0.75rem', borderRadius: '10px', color: '#818cf8' }}>
+                        <Calendar size={24} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <h3 style={{ color: 'white', fontWeight: 700, marginBottom: '0.25rem', fontSize: '1rem' }}>
+                            🎉 You've been shortlisted!
+                        </h3>
+                        <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                            The recruiter wants to meet you. Schedule your interview at your convenience.
+                        </p>
+                    </div>
+                    <a
+                        href={`https://cal.com/nischitha-l-35mch5/30minz?name=${encodeURIComponent(user.name || '')}&email=${encodeURIComponent(user.email || '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                            color: 'white',
+                            padding: '0.625rem 1.25rem',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 4px 14px rgba(99,102,241,0.3)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <Calendar size={16} /> Schedule Interview <ExternalLink size={14} />
+                    </a>
+                </div>
+            )}
+
             <div className="card">
                 <h2 className="text-xl font-bold mb-6">Recent Applications</h2>
                 <div className="applications-list">
@@ -168,7 +218,18 @@ export default function CandidateDashboard() {
                                             {app.stage}
                                         </span>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                                        {['shortlisted', 'recommended'].includes(app.stage.toLowerCase()) && (
+                                            <a
+                                                href={`https://cal.com/nischitha-l-35mch5/30minz?name=${encodeURIComponent(user.name || '')}&email=${encodeURIComponent(user.email || '')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-sm btn-primary"
+                                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none' }}
+                                            >
+                                                <Calendar size={13} /> Schedule
+                                            </a>
+                                        )}
                                         <Link to={`/candidate/applications/${app.id}/status`} className="btn btn-sm btn-secondary">View Status</Link>
                                         <button
                                             onClick={() => handleWithdrawClick(app.id)}
