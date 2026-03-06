@@ -9,7 +9,7 @@ import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<'hr' | 'applicant' | null>(null);
   const [viewMode, setViewMode] = useState<'login' | 'signup'>('login');
@@ -59,54 +59,50 @@ export default function Login() {
     setModalState({ isOpen: true, title, message, type: 'success' });
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password || !selectedRole) return;
 
     setIsLoading(true);
-    const email = formData.email.trim();
-    const password = formData.password.trim();
+    try {
+      const profile = await login(formData.email.trim(), formData.password.trim());
 
-    if (selectedRole === 'hr') {
-      if (formData.companyPin !== '1975') {
-        showError('Access Denied', 'Invalid Company PIN. Please contact your administrator.');
-        setIsLoading(false);
-        return;
+      // Validate company PIN for HR (client-side guard)
+      if (selectedRole === 'hr') {
+        if (formData.companyPin !== '1975') {
+          showError('Access Denied', 'Invalid Company PIN. Please contact your administrator.');
+          setIsLoading(false);
+          return;
+        }
+        if (profile.role !== 'hr') {
+          showError('Role Mismatch', 'This account is not registered as an HR account.');
+          setIsLoading(false);
+          return;
+        }
+        navigate('/admin');
+      } else {
+        if (profile.role !== 'applicant') {
+          showError('Role Mismatch', 'This account is not a candidate account.');
+          setIsLoading(false);
+          return;
+        }
+        navigate('/candidate/dashboard');
       }
-      const registeredHRs = JSON.parse(localStorage.getItem('registeredHRs') || '[]');
-      const user = registeredHRs.find((u: any) => u.email === email);
-      if (!user) {
-        showError('Account Not Found', 'No HR account found with this email. Please register first.');
-        setIsLoading(false);
-        return;
+    } catch (err: any) {
+      const msg = err?.message || 'Invalid email or password. Please try again.';
+      if (msg.includes('Email not confirmed')) {
+        showError('Confirm Email', 'Please check your inbox and confirm your email before signing in.');
+      } else if (msg.includes('Invalid login credentials')) {
+        showError('Invalid Credentials', 'The email or password you entered is incorrect.');
+      } else {
+        showError('Sign In Failed', msg);
       }
-      if (user.password.trim() !== password) {
-        showError('Invalid Credentials', 'Incorrect password. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-      login(selectedRole, email, user.name, user.roleTitle);
-      navigate('/admin');
-    } else {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      const user = registeredUsers.find((u: any) => u.email === email);
-      if (!user) {
-        showError('Account Not Found', 'No account found with this email. Please register first.');
-        setIsLoading(false);
-        return;
-      }
-      if (user.password.trim() !== password) {
-        showError('Invalid Credentials', 'Incorrect password. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-      login(selectedRole, email, user.name, user.roleTitle);
-      navigate('/candidate/dashboard');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password || !formData.name) return;
 
@@ -114,50 +110,41 @@ export default function Login() {
       showError('Password Mismatch', 'Your passwords do not match. Please try again.');
       return;
     }
-
     if (formData.password.length < 6) {
       showError('Weak Password', 'Password must be at least 6 characters long.');
       return;
     }
 
-    setIsLoading(true);
-    const email = formData.email.trim();
-    const password = formData.password.trim();
-
-    if (selectedRole === 'hr') {
-      if (formData.companyPin !== '1975') {
-        showError('Access Restricted', 'Invalid Company PIN. HR registration requires a valid PIN.');
-        setIsLoading(false);
-        return;
-      }
-      const registeredHRs = JSON.parse(localStorage.getItem('registeredHRs') || '[]');
-      if (registeredHRs.some((u: any) => u.email === email)) {
-        showError('Already Registered', 'An HR account with this email already exists. Please sign in.');
-        setIsLoading(false);
-        return;
-      }
-      if (registeredHRs.some((u: any) => u.password === password)) {
-        showError('Password In Use', 'This password is already taken. Please choose a different one.');
-        setIsLoading(false);
-        return;
-      }
-      registeredHRs.push({ email, password, name: formData.name, role: 'hr', roleTitle: formData.roleTitle });
-      localStorage.setItem('registeredHRs', JSON.stringify(registeredHRs));
-      showSuccess('Account Created!', 'Your HR account has been created. Please sign in to get started.');
-      setViewMode('login');
-    } else {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      if (registeredUsers.some((u: any) => u.email === email)) {
-        showError('Already Registered', 'An account with this email already exists. Please sign in.');
-        setIsLoading(false);
-        return;
-      }
-      registeredUsers.push({ email, password, name: formData.name, role: 'applicant', roleTitle: formData.roleTitle });
-      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-      showSuccess('Account Created!', 'Your account is ready. Please sign in with your credentials.');
-      setViewMode('login');
+    // HR requires PIN
+    if (selectedRole === 'hr' && formData.companyPin !== '1975') {
+      showError('Access Restricted', 'Invalid Company PIN. HR registration requires a valid PIN.');
+      return;
     }
-    setIsLoading(false);
+
+    setIsLoading(true);
+    try {
+      await register({
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+        name: formData.name.trim(),
+        role: selectedRole!,
+        roleTitle: formData.roleTitle.trim() || undefined,
+      });
+      showSuccess(
+        'Account Created! 🎉',
+        'Your account has been created. Please check your email to confirm your address, then sign in.'
+      );
+      setViewMode('login');
+    } catch (err: any) {
+      const msg = err?.message || 'Registration failed. Please try again.';
+      if (msg.includes('already registered') || msg.includes('already exists')) {
+        showError('Already Registered', 'An account with this email already exists. Please sign in.');
+      } else {
+        showError('Registration Failed', msg);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isHR = selectedRole === 'hr';

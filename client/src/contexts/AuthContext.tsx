@@ -1,110 +1,219 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase, authService, AppUser } from '../lib/supabase';
 
-interface User {
-  name: string | null;
-  role: 'hr' | 'applicant' | null;
-  roleTitle?: string | null;
-  email: string | null;
-  isAuthenticated: boolean;
-}
-
+// ─────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────
 interface AuthContextType {
-  user: User;
-  login: (role: 'hr' | 'applicant', email?: string, name?: string, roleTitle?: string) => void;
-  logout: () => void;
+  user: {
+    id: string | null;
+    name: string | null;
+    role: 'hr' | 'applicant' | null;
+    roleTitle?: string | null;
+    email: string | null;
+    isAuthenticated: boolean;
+  };
+  /** Supabase sign-up */
+  register: (params: {
+    email: string;
+    password: string;
+    name: string;
+    role: 'hr' | 'applicant';
+    roleTitle?: string;
+  }) => Promise<void>;
+  /** Supabase sign-in */
+  login: (email: string, password: string) => Promise<AppUser>;
+  /** Supabase sign-out */
+  logout: () => Promise<void>;
+  /** Still loading the initial session */
+  loading: boolean;
 }
+
+const defaultUser = {
+  id: null,
+  name: null,
+  role: null as 'hr' | 'applicant' | null,
+  roleTitle: null,
+  email: null,
+  isAuthenticated: false,
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ─────────────────────────────────────────────────────────
+// Provider
+// ─────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User>(() => {
-    // Check localStorage for existing session
-    const savedRole = localStorage.getItem('userRole');
-    const savedEmail = localStorage.getItem('userEmail');
-    const savedName = localStorage.getItem('userName');
-    const savedRoleTitle = localStorage.getItem('userRoleTitle');
-    return {
-      name: savedName,
-      role: savedRole as 'hr' | 'applicant' | null,
-      roleTitle: savedRoleTitle,
-      email: savedEmail,
-      isAuthenticated: !!savedRole
-    };
-  });
+  const [user, setUser] = useState(defaultUser);
+  const [loading, setLoading] = useState(true);
 
-  const login = (role: 'hr' | 'applicant', emailInput?: string, nameInput?: string, roleTitleInput?: string) => {
-    // Generate a temporary ID for the user
-    // Use the provided email or fallback to defaults
-    const email = emailInput || (role === 'hr' ? 'recruiter@company.com' : 'candidate@user.com');
-    const name = nameInput || (role === 'hr' ? 'HR Manager' : 'Job Applicant');
-    const timestamp = new Date().toISOString();
-    const sessionId = crypto.randomUUID();
+  // On mount: restore session from Supabase (persists across refreshes)
+  useEffect(() => {
+    let mounted = true;
 
-    // Save to history using only localStorage as a simple 'backend' for now
-    if (role === 'hr') {
-      const history = JSON.parse(localStorage.getItem('loginHistory') || '[]');
-
-      // Close any previous active sessions for this user that were left open
-      history.forEach((h: any) => {
-        if (h.email === email && h.logoutTime === null) {
-          h.logoutTime = timestamp; // Mark as ended at the time of new login
+    const restoreSession = async () => {
+      try {
+        const session = await authService.getSession();
+        if (session?.user && mounted) {
+          const profile = await authService.getProfile(session.user.id);
+          if (profile && mounted) {
+            setUser({
+              id: profile.id,
+              name: profile.name,
+              role: profile.role,
+              roleTitle: profile.roleTitle ?? null,
+              email: profile.email,
+              isAuthenticated: true,
+            });
+            // Keep localStorage in sync for historyLogger (legacy support)
+            syncLocalStorage(profile);
+          }
         }
-      });
+      } catch (err) {
+        console.warn('Session restore failed:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
 
-      history.push({
-        id: sessionId,
-        email: email,
-        name: name,
-        loginTime: timestamp,
-        logoutTime: null,
-        role: role
-      });
-      localStorage.setItem('loginHistory', JSON.stringify(history));
-    }
+    restoreSession();
 
-    const newUser: User = { name, role, email, roleTitle: roleTitleInput, isAuthenticated: true };
-    setUser(newUser);
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userName', name);
-    if (roleTitleInput) localStorage.setItem('userRoleTitle', roleTitleInput);
-    // Needed to link logout with this session later
-    localStorage.setItem('lastSessionId', sessionId);
-    localStorage.setItem('lastLoginTime', timestamp); // used by historyLogger to find the active session
+    // Listen for auth state changes (token refresh, sign-out from another tab, etc.)
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(defaultUser);
+        clearLocalStorage();
+      } else if (session?.user) {
+        const profile = await authService.getProfile(session.user.id);
+        if (profile && mounted) {
+          setUser({
+            id: profile.id,
+            name: profile.name,
+            role: profile.role,
+            roleTitle: profile.roleTitle ?? null,
+            email: profile.email,
+            isAuthenticated: true,
+          });
+          syncLocalStorage(profile);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // ── Register ──────────────────────────────────────────
+  const register = async ({
+    email,
+    password,
+    name,
+    role,
+    roleTitle,
+  }: {
+    email: string;
+    password: string;
+    name: string;
+    role: 'hr' | 'applicant';
+    roleTitle?: string;
+  }) => {
+    await authService.signUp(email, password, { name, role, roleTitle });
+    // Don't auto-login — user should verify email (or we can auto-login if email confirm is off)
   };
 
-  const logout = () => {
-    // Update history with logout time
+  // ── Login ─────────────────────────────────────────────
+  const login = async (email: string, password: string): Promise<AppUser> => {
+    const data = await authService.signIn(email, password);
+    if (!data.user) throw new Error('Login failed — no user returned');
+
+    const profile = await authService.getProfile(data.user.id);
+    if (!profile) throw new Error('Profile not found. Please contact support.');
+
+    setUser({
+      id: profile.id,
+      name: profile.name,
+      role: profile.role,
+      roleTitle: profile.roleTitle ?? null,
+      email: profile.email,
+      isAuthenticated: true,
+    });
+
+    syncLocalStorage(profile);
+    return profile;
+  };
+
+  // ── Logout ────────────────────────────────────────────
+  const logout = async () => {
+    // Record logout time in loginHistory (legacy historyLogger support)
     const sessionId = localStorage.getItem('lastSessionId');
     if (sessionId) {
       const history = JSON.parse(localStorage.getItem('loginHistory') || '[]');
-      const sessionIndex = history.findIndex((h: any) => h.id === sessionId);
-      if (sessionIndex !== -1) {
-        history[sessionIndex].logoutTime = new Date().toISOString();
+      const idx = history.findIndex((h: any) => h.id === sessionId);
+      if (idx !== -1) {
+        history[idx].logoutTime = new Date().toISOString();
         localStorage.setItem('loginHistory', JSON.stringify(history));
       }
-      localStorage.removeItem('lastSessionId');
     }
-
-    const newUser: User = { name: null, role: null, email: null, isAuthenticated: false };
-    setUser(newUser);
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userRoleTitle');
+    await authService.signOut();
+    setUser(defaultUser);
+    clearLocalStorage();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// ─────────────────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────────────────
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
+}
+
+// ─────────────────────────────────────────────────────────
+// Helpers (keep localStorage in sync for historyLogger)
+// ─────────────────────────────────────────────────────────
+function syncLocalStorage(profile: AppUser) {
+  const timestamp = new Date().toISOString();
+  const sessionId = crypto.randomUUID();
+
+  localStorage.setItem('userRole', profile.role);
+  localStorage.setItem('userEmail', profile.email);
+  localStorage.setItem('userName', profile.name);
+  if (profile.roleTitle) localStorage.setItem('userRoleTitle', profile.roleTitle);
+
+  if (profile.role === 'hr') {
+    const history = JSON.parse(localStorage.getItem('loginHistory') || '[]');
+    history.forEach((h: any) => {
+      if (h.email === profile.email && h.logoutTime === null) {
+        h.logoutTime = timestamp;
+      }
+    });
+    history.push({
+      id: sessionId,
+      email: profile.email,
+      name: profile.name,
+      loginTime: timestamp,
+      logoutTime: null,
+      role: profile.role,
+    });
+    localStorage.setItem('loginHistory', JSON.stringify(history));
+    localStorage.setItem('lastSessionId', sessionId);
+    localStorage.setItem('lastLoginTime', timestamp);
+  }
+}
+
+function clearLocalStorage() {
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userRoleTitle');
+  localStorage.removeItem('lastLoginTime');
 }
