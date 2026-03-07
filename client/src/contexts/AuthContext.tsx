@@ -95,12 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession();
 
     // Listen for auth state changes (token refresh, sign-out, etc.)
+    // Skip SIGNED_IN if we're already authenticated — register() and login() handle that themselves
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         setUser(defaultUser);
         clearLocalStorage();
         if (mounted) setLoading(false);
-      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Only refresh on token rotation — don't race with register/login
         const profile = await authService.getProfile(session.user.id);
         if (profile && mounted) {
           setUser({
@@ -112,7 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isAuthenticated: true,
           });
           syncLocalStorage(profile);
-          if (mounted) setLoading(false);
         }
       }
     });
@@ -142,8 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // signUp with email-confirm disabled returns a live session immediately
     if (!data.user) throw new Error('Signup failed — no user returned.');
 
-    const profile = await authService.getProfile(data.user.id);
-    if (!profile) throw new Error('Profile creation failed. Please try again.');
+    // Build the profile from signup metadata we ALREADY KNOW — no extra DB call needed.
+    // Calling getProfile() here races with onAuthStateChange (SIGNED_IN), causing an
+    // IndexedDB lock conflict. The DB trigger creates the profile record automatically.
+    const profile: AppUser = {
+      id: data.user.id,
+      email: data.user.email!,
+      name,
+      role,
+      roleTitle,
+      companyId: undefined,
+    };
 
     setUser({
       id: profile.id,

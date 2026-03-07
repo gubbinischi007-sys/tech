@@ -36,21 +36,6 @@ export const authService = {
 
         if (error) throw error;
 
-        // 2. Insert profile row (handled by DB trigger ideally, but fallback here)
-        if (data.user) {
-            const { error: profileError } = await supabase.from('user_profiles').upsert({
-                id: data.user.id,
-                email,
-                name: meta.name,
-                role: meta.role,
-                role_title: meta.roleTitle || '',
-            });
-            if (profileError) {
-                console.error("Profile upsert failed:", profileError);
-                throw new Error("Failed to create user profile: " + profileError.message);
-            }
-        }
-
         return data;
     },
 
