@@ -583,7 +583,22 @@ export default function ApplicantDetail() {
                   id="interview-date-applicant"
                   value={interviewForm.scheduled_at}
                   min={new Date().toISOString().slice(0, 16)}
-                  onChange={(e) => setInterviewForm({ ...interviewForm, scheduled_at: e.target.value })}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    if (interviewForm.type === 'online' && newDate) {
+                      const calUser = import.meta.env.VITE_CALCOM_USERNAME || 'nischitha-l-35mch5';
+                      const calEvent = import.meta.env.VITE_CALCOM_EVENT || '30minz';
+                      const params = new URLSearchParams();
+                      if (applicant?.first_name || applicant?.last_name) params.set('name', `${applicant.first_name} ${applicant.last_name}`.trim());
+                      if (applicant?.email) params.set('email', applicant.email);
+                      const dt = new Date(newDate);
+                      params.set('date', dt.toISOString().split('T')[0]);
+                      params.set('time', dt.toTimeString().slice(0, 5));
+                      setInterviewForm({ ...interviewForm, scheduled_at: newDate, meeting_link: `https://cal.com/${calUser}/${calEvent}?${params.toString()}` });
+                    } else {
+                      setInterviewForm({ ...interviewForm, scheduled_at: newDate });
+                    }
+                  }}
                   required
                   className="form-input-sm"
                   style={{ width: '100%' }}
@@ -610,18 +625,26 @@ export default function ApplicantDetail() {
                   onChange={(e) => {
                     const newType = e.target.value;
                     if (newType === 'online') {
-                      // Auto-generate a mock Google Meet link
-                      const chars = 'abcdefghijklmnopqrstuvwxyz';
-                      const rand = (n: number) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-                      const mockLink = `https://meet.google.com/${rand(3)}-${rand(4)}-${rand(3)}`;
-                      setInterviewForm({ ...interviewForm, type: newType, meeting_link: mockLink });
+                      // Build Cal.com booking link pre-filled with candidate info + date
+                      const calUser = import.meta.env.VITE_CALCOM_USERNAME || 'nischitha-l-35mch5';
+                      const calEvent = import.meta.env.VITE_CALCOM_EVENT || '30minz';
+                      const params = new URLSearchParams();
+                      if (applicant?.first_name || applicant?.last_name) params.set('name', `${applicant.first_name} ${applicant.last_name}`.trim());
+                      if (applicant?.email) params.set('email', applicant.email);
+                      if (interviewForm.scheduled_at) {
+                        const dt = new Date(interviewForm.scheduled_at);
+                        params.set('date', dt.toISOString().split('T')[0]);
+                        params.set('time', dt.toTimeString().slice(0, 5));
+                      }
+                      const calLink = `https://cal.com/${calUser}/${calEvent}?${params.toString()}`;
+                      setInterviewForm({ ...interviewForm, type: newType, meeting_link: calLink });
                     } else {
                       setInterviewForm({ ...interviewForm, type: newType, meeting_link: '' });
                     }
                   }}
                   className="form-select-sm"
                 >
-                  <option value="online">Online</option>
+                  <option value="online">Online (Cal.com)</option>
                   <option value="in-person">In-Person</option>
                   <option value="phone">Phone</option>
                 </select>
@@ -631,19 +654,42 @@ export default function ApplicantDetail() {
                   Meeting Link
                   {interviewForm.type === 'online' && interviewForm.meeting_link && (
                     <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '99px', padding: '1px 8px', fontWeight: 600 }}>
-                      ✓ Auto-generated
+                      ✓ Cal.com
                     </span>
                   )}
                 </label>
-                <input
-                  type="text"
-                  value={interviewForm.meeting_link}
-                  onChange={(e) => setInterviewForm({ ...interviewForm, meeting_link: e.target.value })}
-                  placeholder={interviewForm.type === 'online' ? 'Generating link...' : 'https://...'}
-                  className="form-input-sm"
-                  readOnly={interviewForm.type === 'online'}
-                  style={interviewForm.type === 'online' ? { opacity: 0.8, cursor: 'default', color: '#34d399' } : {}}
-                />
+                {interviewForm.type === 'online' ? (
+                  interviewForm.meeting_link ? (
+                    <a
+                      href={interviewForm.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="form-input-sm"
+                      style={{
+                        display: 'block', width: '100%', color: '#34d399',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.06)',
+                        border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px',
+                        textDecoration: 'none', fontSize: '0.8rem'
+                      }}
+                    >
+                      🔗 {interviewForm.meeting_link}
+                    </a>
+                  ) : (
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.3rem' }}>
+                      Select a date &amp; time first to generate the Cal.com link.
+                    </p>
+                  )
+                ) : (
+                  <input
+                    type="text"
+                    value={interviewForm.meeting_link}
+                    onChange={(e) => setInterviewForm({ ...interviewForm, meeting_link: e.target.value })}
+                    placeholder="Location / address"
+                    className="form-input-sm"
+                    style={{ width: '100%' }}
+                  />
+                )}
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label className="form-label-sm">Notes</label>
