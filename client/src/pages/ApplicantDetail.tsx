@@ -155,6 +155,21 @@ export default function ApplicantDetail() {
     e.preventDefault();
     if (!id || !applicant) return;
 
+    // Validate working hours before submitting
+    if (interviewForm.scheduled_at) {
+      const dt = new Date(interviewForm.scheduled_at);
+      const day = dt.getDay();
+      const totalMins = dt.getHours() * 60 + dt.getMinutes();
+      let blocked = false;
+      if (day === 0) blocked = true;
+      else if (day >= 1 && day <= 5 && (totalMins < 9 * 60 || totalMins >= 17 * 60)) blocked = true;
+      else if (day === 6 && (totalMins < 10 * 60 || totalMins > 12 * 60 + 30)) blocked = true;
+      if (blocked) {
+        addNotification('error', 'Please select a time within working hours (Mon–Fri 9 AM–5 PM, Sat 10 AM–12:30 PM).');
+        return;
+      }
+    }
+
     try {
       await interviewsApi.create({
         applicant_id: id,
@@ -562,16 +577,31 @@ export default function ApplicantDetail() {
           {showInterviewForm && (
             <form onSubmit={handleInterviewSubmit} className="interview-form">
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label-sm">Date & Time</label>
+                <label className="form-label-sm">Date &amp; Time</label>
                 <input
                   type="datetime-local"
                   id="interview-date-applicant"
                   value={interviewForm.scheduled_at}
+                  min={new Date().toISOString().slice(0, 16)}
                   onChange={(e) => setInterviewForm({ ...interviewForm, scheduled_at: e.target.value })}
                   required
                   className="form-input-sm"
                   style={{ width: '100%' }}
                 />
+                {!interviewForm.scheduled_at ? (
+                  <p style={{ marginTop: '0.4rem', fontSize: '0.72rem', color: '#64748b', lineHeight: 1.6 }}>
+                    🕐 <strong style={{ color: '#94a3b8' }}>Mon–Fri 9:00 AM – 5:00 PM</strong> &nbsp;|&nbsp; <strong style={{ color: '#94a3b8' }}>Sat 10:00 AM – 12:30 PM</strong> &nbsp;|&nbsp; Sun closed
+                  </p>
+                ) : (() => {
+                  const dt = new Date(interviewForm.scheduled_at);
+                  const day = dt.getDay();
+                  const mins = dt.getHours() * 60 + dt.getMinutes();
+                  if (day === 0 || (day >= 1 && day <= 5 && (mins < 540 || mins >= 1020)) || (day === 6 && (mins < 600 || mins > 750))) {
+                    const msg = day === 0 ? 'Interviews cannot be scheduled on Sundays.' : day === 6 ? 'Sat slots: 10:00 AM – 12:30 PM only.' : 'Mon–Fri slots: 9:00 AM – 5:00 PM only.';
+                    return <p style={{ marginTop: '0.4rem', fontSize: '0.72rem', color: '#f97316' }}>⚠️ {msg}</p>;
+                  }
+                  return <p style={{ marginTop: '0.4rem', fontSize: '0.72rem', color: '#10b981' }}>✓ Within working hours</p>;
+                })()}
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label className="form-label-sm">Type</label>

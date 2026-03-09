@@ -342,7 +342,7 @@ export default function Applicants() {
 
       <div className="jobs-toolbar" style={{ marginBottom: '2rem' }}>
         <div className="filter-group">
-          {['All', 'Applied', 'Shortlisted', 'Recommended', 'Hired', 'Declined'].map((stage) => (
+          {['All', 'Applied', 'Shortlisted', 'Recommended', 'Hired', 'Declined', 'Rejected'].map((stage) => (
             <button
               key={stage}
               className={`filter-btn ${filters.stage === stage ? 'active' : ''}`}
