@@ -83,8 +83,10 @@ api.get('/health', (_req: any, res: any) => res.json({ status: 'ok', db: 'supaba
 // ══════════════════════════════════════════════════════════════════════════════
 api.get('/jobs', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         let q = sb.from('jobs').select('*').order('created_at', { ascending: false });
         if (req.query.status) q = q.eq('status', req.query.status);
+        if (companyId) q = q.eq('company_id', companyId);
         const { data, error } = await q;
         if (error) throw error;
         res.json(data || []);
@@ -101,12 +103,13 @@ api.get('/jobs/:id', async (req: any, res: any) => {
 
 api.post('/jobs', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         const { title, department, location, type, description, requirements, status } = req.body;
         const now = new Date().toISOString();
         const { data, error } = await sb.from('jobs').insert({
             id: uuidv4(), title, department: department || null, location: location || null,
             type: type || null, description: description || null, requirements: requirements || null,
-            status: status || 'open', created_at: now, updated_at: now
+            status: status || 'open', company_id: companyId || null, created_at: now, updated_at: now
         }).select().single();
         if (error) throw error;
         res.status(201).json(data);
@@ -139,11 +142,13 @@ api.delete('/jobs/:id', async (req: any, res: any) => {
 api.get('/applicants', async (req: any, res: any) => {
     try {
         const { job_id, stage, status, email } = req.query;
-        let q = sb.from('applicants').select('*').order('applied_at', { ascending: false });
+        const companyId = req.headers['x-company-id'];
+        let q = sb.from('applicants').select('*, jobs!inner(company_id)').order('applied_at', { ascending: false });
         if (email) q = q.eq('email', email);
         if (job_id) q = q.eq('job_id', job_id);
         if (stage) q = q.eq('stage', stage);
         if (status) q = q.eq('status', status);
+        if (companyId) q = q.eq('jobs.company_id', companyId);
         const { data, error } = await q;
         if (error) throw error;
 
@@ -278,12 +283,14 @@ api.post('/applicants/:id/offer-response', async (req: any, res: any) => {
 api.get('/interviews', async (req: any, res: any) => {
     try {
         const { applicant_id, job_id, status, applicant_email } = req.query;
+        const companyId = req.headers['x-company-id'];
         const rows = await sql(`
       SELECT i.*, a.first_name||' '||a.last_name as applicant_name, a.email as applicant_email, j.title as job_title
       FROM interviews i
       LEFT JOIN applicants a ON i.applicant_id=a.id
       LEFT JOIN jobs j ON i.job_id=j.id
       WHERE 1=1
+      ${companyId ? `AND j.company_id='${companyId}'` : ''}
       ${applicant_id ? `AND i.applicant_id='${applicant_id}'` : ''}
       ${job_id ? `AND i.job_id='${job_id}'` : ''}
       ${status ? `AND i.status='${status}'` : ''}
@@ -363,9 +370,12 @@ api.delete('/interviews/:id', async (req: any, res: any) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // EMPLOYEES
 // ══════════════════════════════════════════════════════════════════════════════
-api.get('/employees', async (_req: any, res: any) => {
+api.get('/employees', async (req: any, res: any) => {
     try {
-        const { data, error } = await sb.from('employees').select('*').order('created_at', { ascending: false });
+        const companyId = req.headers['x-company-id'];
+        let q = sb.from('employees').select('*').order('created_at', { ascending: false });
+        if (companyId) q = q.eq('company_id', companyId);
+        const { data, error } = await q;
         if (error) throw error;
         res.json(data || []);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -373,15 +383,17 @@ api.get('/employees', async (_req: any, res: any) => {
 
 api.post('/employees', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         const { applicant_id, name, email, job_title, department, hired_date, status } = req.body;
         if (!name || !email) return res.status(400).json({ error: 'Name and email required' });
+        // NOTE: we should ideally check existing within the same companyId
         const { data: existing } = await sb.from('employees').select('id').eq('email', email).maybeSingle();
         if (existing) return res.status(400).json({ error: 'Employee already exists' });
         const { data, error } = await sb.from('employees').insert({
             id: uuidv4(), applicant_id: applicant_id || null, name, email,
             job_title: job_title || null, department: department || null,
             hired_date: hired_date || new Date().toISOString(),
-            status: status || 'active', created_at: new Date().toISOString()
+            status: status || 'active', company_id: companyId || null, created_at: new Date().toISOString()
         }).select().single();
         if (error) throw error;
         res.status(201).json(data);
@@ -410,18 +422,30 @@ api.delete('/employees/:id', async (req: any, res: any) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // ANALYTICS
 // ══════════════════════════════════════════════════════════════════════════════
-api.get('/analytics/dashboard', async (_req: any, res: any) => {
+api.get('/analytics/dashboard', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
+
+        let j1 = sb.from('jobs').select('*', { count: 'exact', head: true });
+        let j2 = sb.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'open');
+        let a1 = sb.from('applicants').select('*, jobs!inner(company_id)', { count: 'exact', head: true });
+        let i1 = sb.from('interviews').select('*, jobs!inner(company_id)', { count: 'exact', head: true }).eq('status', 'scheduled');
+        let a2 = sb.from('applicants').select('stage, jobs!inner(company_id)');
+        let j3 = sb.from('jobs').select('id, title');
+        let a3 = sb.from('applicants').select('job_id, jobs!inner(company_id)');
+
+        if (companyId) {
+            j1 = j1.eq('company_id', companyId);
+            j2 = j2.eq('company_id', companyId);
+            a1 = a1.eq('jobs.company_id', companyId);
+            i1 = i1.eq('jobs.company_id', companyId);
+            a2 = a2.eq('jobs.company_id', companyId);
+            j3 = j3.eq('company_id', companyId);
+            a3 = a3.eq('jobs.company_id', companyId);
+        }
+
         // Run all counts in parallel
-        const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([
-            sb.from('jobs').select('*', { count: 'exact', head: true }),
-            sb.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'open'),
-            sb.from('applicants').select('*', { count: 'exact', head: true }),
-            sb.from('interviews').select('*', { count: 'exact', head: true }).eq('status', 'scheduled'),
-            sb.from('applicants').select('stage'),
-            sb.from('jobs').select('id, title'),
-            sb.from('applicants').select('job_id'),
-        ]);
+        const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([j1, j2, a1, i1, a2, j3, a3]);
 
         // Count by stage
         const stageMap: Record<string, number> = {};
@@ -449,9 +473,12 @@ api.get('/analytics/dashboard', async (_req: any, res: any) => {
 });
 
 
-api.get('/analytics/applicants-by-stage', async (_req: any, res: any) => {
+api.get('/analytics/applicants-by-stage', async (req: any, res: any) => {
     try {
-        const { data } = await sb.from('applicants').select('stage');
+        const companyId = req.headers['x-company-id'];
+        let q = sb.from('applicants').select('stage, jobs!inner(company_id)');
+        if (companyId) q = q.eq('jobs.company_id', companyId);
+        const { data } = await q;
         const map: Record<string, number> = {};
         (data || []).forEach((r: any) => { map[r.stage] = (map[r.stage] || 0) + 1; });
         res.json(Object.entries(map).map(([stage, count]) => ({ stage, count })));
@@ -460,9 +487,12 @@ api.get('/analytics/applicants-by-stage', async (_req: any, res: any) => {
 
 api.get('/analytics/applicants-over-time', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         const days = parseInt(req.query.days as string) || 30;
         const since = new Date(Date.now() - days * 86400000).toISOString();
-        const { data } = await sb.from('applicants').select('applied_at').gte('applied_at', since);
+        let q = sb.from('applicants').select('applied_at, jobs!inner(company_id)').gte('applied_at', since);
+        if (companyId) q = q.eq('jobs.company_id', companyId);
+        const { data } = await q;
         const map: Record<string, number> = {};
         (data || []).forEach((r: any) => { const d = r.applied_at?.slice(0, 10); if (d) map[d] = (map[d] || 0) + 1; });
         res.json(Object.entries(map).sort().map(([date, count]) => ({ date, count })));
@@ -637,9 +667,12 @@ api.post('/emails/identity-warning', async (req: any, res: any) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // HISTORY
 // ══════════════════════════════════════════════════════════════════════════════
-api.get('/history/stats', async (_req: any, res: any) => {
+api.get('/history/stats', async (req: any, res: any) => {
     try {
-        const { data } = await sb.from('application_history').select('status');
+        const companyId = req.headers['x-company-id'];
+        let q = sb.from('application_history').select('status');
+        if (companyId) q = q.eq('company_id', companyId);
+        const { data } = await q;
         const map: Record<string, number> = {};
         (data || []).forEach((r: any) => { map[r.status] = (map[r.status] || 0) + 1; });
         res.json(Object.entries(map).map(([status, count]) => ({ status, count })));
@@ -648,8 +681,10 @@ api.get('/history/stats', async (_req: any, res: any) => {
 
 api.get('/history', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         let q = sb.from('application_history').select('*').order('date', { ascending: false });
         if (req.query.email) q = q.eq('email', req.query.email);
+        if (companyId) q = q.eq('company_id', companyId);
         const { data, error } = await q;
         if (error) throw error;
         res.json(data || []);
@@ -658,11 +693,12 @@ api.get('/history', async (req: any, res: any) => {
 
 api.post('/history', async (req: any, res: any) => {
     try {
+        const companyId = req.headers['x-company-id'];
         const { name, email, job_title, status, reason } = req.body;
         if (!name || !email || !status) return res.status(400).json({ error: 'Missing required fields' });
         const { data, error } = await sb.from('application_history').insert({
             id: uuidv4(), name, email, job_title: job_title || null,
-            status, reason: reason || null, date: new Date().toISOString()
+            status, reason: reason || null, company_id: companyId || null, date: new Date().toISOString()
         }).select().single();
         if (error) throw error;
         res.status(201).json(data);
