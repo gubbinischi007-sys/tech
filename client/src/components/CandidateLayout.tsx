@@ -2,12 +2,15 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Briefcase, User, LogOut, Hexagon, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import './Layout.css'; // Reusing the same CSS but you could make a separate one
+import ProfileModal from './ProfileModal';
+import { useState } from 'react';
+import './Layout.css';
 
 export default function CandidateLayout() {
     const location = useLocation();
     const { user, logout } = useAuth();
     const { unreadCount } = useNotification();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const navLinks = [
         { path: '/candidate/jobs', label: 'Browse Jobs', icon: Briefcase },
@@ -67,8 +70,8 @@ export default function CandidateLayout() {
                             })}
 
                             <div className="user-profile">
-                                <div className="user-info">
-                                    <span className="user-name">{user.name || 'Candidate'}</span>
+                                <div className="user-info" onClick={() => setIsProfileOpen(true)} style={{ cursor: 'pointer' }} title="View Profile">
+                                    <span className="user-name" style={{ borderBottom: '1px dashed rgba(255,255,255,0.3)' }}>{user.name || 'Candidate'}</span>
                                     <span className="user-role">Applicant</span>
                                 </div>
                                 <button
@@ -88,6 +91,7 @@ export default function CandidateLayout() {
                     <Outlet />
                 </div>
             </main>
+            <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCompany } from '../contexts/CompanyContext';
 import { resetOnboarding } from './OnboardingTour';
 import OnboardingTour from './OnboardingTour';
+import ProfileModal from './ProfileModal';
 import { useState } from 'react';
 import './Layout.css';
 
@@ -13,6 +14,7 @@ export default function Layout() {
   const { company } = useCompany();
   const [tourKey, setTourKey] = useState(0);
   const [forceTour, setForceTour] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleRestartTour = () => {
     resetOnboarding();
@@ -79,8 +81,8 @@ export default function Layout() {
               })}
 
               <div className="user-profile">
-                <div className="user-info">
-                  <span className="user-name">{user.name || 'HR Manager'}</span>
+                <div className="user-info" onClick={() => setIsProfileOpen(true)} style={{ cursor: 'pointer' }} title="View Profile">
+                  <span className="user-name" style={{ borderBottom: '1px dashed rgba(255,255,255,0.3)' }}>{user.name || 'HR Manager'}</span>
                   <span className="user-role">{user.roleTitle || 'Recruiter / HR'}</span>
                 </div>
 
@@ -111,6 +113,7 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </div>
   );
 }
