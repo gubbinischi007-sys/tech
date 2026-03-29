@@ -97,6 +97,28 @@ export const employeesApi = {
   delete: (id: string) => api.delete(`/employees/${id}`),
 };
 
+export const referencesApi = {
+  request: (data: { applicant_id: string; ref_name: string; ref_email: string; relationship?: string }) => 
+    api.post('/references/request', data),
+  getByApplicant: (applicantId: string) => 
+    api.get(`/references/applicant/${applicantId}`),
+  getFormDetails: (token: string) => 
+    api.get(`/references/form/${token}`),
+  submitForm: (token: string, responses: any) => 
+    api.post(`/references/form/${token}/submit`, { responses }),
+};
+
+export const platformApi = {
+  getCompanyStatus: (email: string) => 
+    api.get(`/platform/status`, { params: { email } }),
+  getCompanies: (status?: string) => 
+    api.get('/platform/companies', { params: { status } }),
+  verifyCompany: (id: string, status: 'approved' | 'rejected') => 
+    api.post(`/platform/companies/${id}/verify`, { status }),
+  registerCompany: (data: any) => 
+    api.post('/platform/register', data),
+};
+
 // History API
 export const historyApi = {
   getAll: (email?: string) => api.get('/history', { params: { email } }),

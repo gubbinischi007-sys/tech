@@ -10,13 +10,15 @@ interface Company {
     invite_code: string;
     logo_url?: string;
     plan: string;
+    status: string;
+    document_url?: string;
 }
 
 interface CompanyContextType {
     company: Company | null;
     loading: boolean;
     /** Create a new company workspace (first-time HR setup) */
-    createCompany: (name: string, slug: string) => Promise<Company>;
+    createCompany: (name: string, slug: string, documentUrl?: string) => Promise<Company>;
     /** Join an existing company using invite code */
     joinCompany: (inviteCode: string) => Promise<Company>;
     refetch: () => Promise<void>;
@@ -74,13 +76,19 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         }
     }, [user.id, user.isAuthenticated]);
 
-    const createCompany = async (name: string, slug: string): Promise<Company> => {
+    const createCompany = async (name: string, slug: string, documentUrl?: string): Promise<Company> => {
         if (!user.id) throw new Error('Not authenticated');
-
+        
         // 1. Insert the company row
         const { data: comp, error: compError } = await supabase
             .from('companies')
-            .insert({ name, slug })
+            .insert({ 
+                name, 
+                slug, 
+                email: user.email,
+                document_url: documentUrl,
+                status: 'pending' 
+            })
             .select()
             .single();
 

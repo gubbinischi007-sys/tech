@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: JSX.Element;
-  allowedRole?: 'hr' | 'applicant';
+  allowedRole?: 'hr' | 'applicant' | 'super_admin';
 }
 
 export default function ProtectedRoute({ children, allowedRole }: ProtectedRouteProps) {
@@ -42,6 +42,7 @@ export default function ProtectedRoute({ children, allowedRole }: ProtectedRoute
   }
 
   if (allowedRole && user.role !== allowedRole) {
+    if (user.role === 'super_admin') return <Navigate to="/platform-admin" replace />;
     return <Navigate to={user.role === 'hr' ? '/admin' : '/candidate/dashboard'} replace />;
   }
 

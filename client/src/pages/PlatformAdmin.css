@@ -1,0 +1,357 @@
+.platform-admin-page {
+    padding: 3rem 4rem;
+    min-width: 100vw;
+    box-sizing: border-box;
+    background: #09090b; /* Deep rich black/slate */
+    min-height: 100vh;
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Ambient glow in background */
+.platform-admin-page::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.platform-admin-page::after {
+    content: '';
+    position: fixed;
+    bottom: -20%;
+    right: -10%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.admin-header, .admin-controls, .companies-grid {
+    position: relative;
+    z-index: 1;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 1.5rem;
+}
+
+.admin-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 2.25rem;
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(to right, #ffffff, #94a3b8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Fix icon color inside gradient text */
+.admin-header h1 svg {
+    color: #818cf8;
+}
+
+.subtitle {
+    color: #94a3b8;
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 400;
+}
+
+/* Controls (Search & Filter) */
+.admin-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.search-box svg {
+    color: #64748b;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    outline: none;
+    color: #f8fafc;
+    font-size: 0.95rem;
+}
+
+.search-box input::placeholder {
+    color: #475569;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.35rem;
+    border-radius: 12px;
+}
+
+.filter-tabs button {
+    padding: 0.6rem 1.25rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-tabs button:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-tabs button.active {
+    background: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Grid & Cards */
+.companies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2rem;
+}
+
+.company-card {
+    background: rgba(30, 41, 59, 0.3);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.company-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.company-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(30, 41, 59, 0.5);
+}
+
+.company-card:hover::before {
+    opacity: 1;
+}
+
+.card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.company-info h3 {
+    font-size: 1.25rem;
+    color: #ffffff;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+}
+
+.company-info p {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-badge {
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.status-badge.pending { background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
+.status-badge.approved { background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3); }
+.status-badge.rejected { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+.card-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.doc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #818cf8;
+    font-size: 0.9rem;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    transition: all 0.2s;
+}
+
+.doc-link:hover { 
+    background: rgba(99, 102, 241, 0.2);
+    transform: translateX(4px);
+}
+
+/* Approve / Reject Actions */
+.card-actions {
+    padding: 1.25rem 1.5rem;
+    background: rgba(15, 23, 42, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    gap: 1rem;
+}
+
+.card-actions button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+}
+
+.btn-approve { 
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #ffffff; 
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+}
+.btn-approve:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+    filter: brightness(1.1);
+}
+
+.btn-reject { 
+    background: transparent; 
+    color: #ef4444; 
+    border: 1px solid rgba(239, 68, 68, 0.4) !important; 
+}
+.btn-reject:hover { 
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.8) !important;
+}
+
+/* Loading & Empty States */
+.loading-state, .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 20px;
+    border: 1px dashed rgba(255,255,255,0.1);
+    color: #94a3b8;
+    font-size: 1.1rem;
+}
+
+.empty-state svg {
+    margin-bottom: 1rem;
+    color: #475569;
+}
+
+/* Error State */
+.admin-unauthorized {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+    background: #09090b;
+    color: white;
+}
+
+.admin-unauthorized h1 { 
+    margin: 1.5rem 0 0.5rem 0; 
+    color: #f8fafc; 
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+.admin-unauthorized p { 
+    color: #94a3b8; 
+    font-size: 1.1rem;
+}

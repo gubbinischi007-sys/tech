@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { analyticsApi, applicantsApi, interviewsApi, historyApi, employeesApi } from '../services/api';
+import { analyticsApi, applicantsApi, interviewsApi, historyApi, employeesApi, platformApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { Briefcase, Users, UserCheck, Calendar, TrendingUp, Plus, ArrowRight, Brain, CheckCircle, Copy, History, AlertTriangle, ShieldCheck, Download, FileText, FileSpreadsheet, UserMinus, GitMerge } from 'lucide-react';
+import { Briefcase, Users, UserCheck, Calendar, TrendingUp, Plus, ArrowRight, Brain, CheckCircle, Copy, History, AlertTriangle, ShieldCheck, Download, FileText, FileSpreadsheet, UserMinus, GitMerge, X } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import './Dashboard.css';
 import StatusModal from '../components/StatusModal';
@@ -18,9 +19,11 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentApplications, setRecentApplications] = useState<any[]>([]);
   const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+  const [companyStatus, setCompanyStatus] = useState<{ status: string; document_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState<'applicants' | 'employees' | 'decisions' | 'login_activity'>('applicants');
 
@@ -53,12 +56,21 @@ export default function Dashboard() {
       // Process recent applications (last 5)
       setRecentApplications(appsRes.data.slice(0, 5));
 
-      // Process upcoming interviews (filter for future dates and take top 5)
       const now = new Date();
       const upcoming = interviewsRes.data
         .filter((i: any) => new Date(i.scheduled_at) > now)
         .slice(0, 5);
       setUpcomingInterviews(upcoming);
+
+      // Fetch company verification status if HR
+      if (user.role === 'hr' && user.email) {
+        try {
+          const statusRes = await platformApi.getCompanyStatus(user.email);
+          setCompanyStatus(statusRes.data);
+        } catch (err) {
+          console.warn('Could not fetch company status:', err);
+        }
+      }
 
     } catch (error) {
       console.error('Failed to load dashboard:', error);
@@ -216,6 +228,39 @@ export default function Dashboard() {
           <p>Overview of your recruitment pipeline.</p>
         </div>
       </div>
+
+      {/* Verification Status Banner */}
+      {user.role === 'hr' && companyStatus && companyStatus.status !== 'approved' && (
+        <div className={`verification-banner ${companyStatus.status}`} style={{
+          marginBottom: '2rem',
+          padding: '1.25rem',
+          borderRadius: '12px',
+          background: companyStatus.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${companyStatus.status === 'pending' ? '#f59e0b' : '#ef4444'}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{ color: companyStatus.status === 'pending' ? '#f59e0b' : '#ef4444' }}>
+            {companyStatus.status === 'pending' ? <AlertTriangle size={24} /> : <X size={24} />}
+          </div>
+          <div style={{ flex: 1 }}>
+            <h4 style={{ fontWeight: 700, margin: 0, color: 'white' }}>
+              Company Verification: {companyStatus.status.toUpperCase()}
+            </h4>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: '#94a3b8' }}>
+              {companyStatus.status === 'pending'
+                ? 'Your company document is being reviewed by our platform administrators. Some features may be restricted until verified.'
+                : 'Your verification was rejected. Please contact support or re-upload your registration documents.'}
+            </p>
+          </div>
+          {companyStatus.status === 'approved' && (
+            <div style={{ color: '#10b981' }}>
+              <ShieldCheck size={24} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="stats-grid">

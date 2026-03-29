@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { applicantsApi, interviewsApi, employeesApi } from '../services/api';
+import { applicantsApi, interviewsApi, employeesApi, referencesApi } from '../services/api';
 import { format } from 'date-fns';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, FileText, Video, CheckCircle, Info, AlertTriangle, X, UserPlus, Star } from 'lucide-react';
 import { logAction, logApplicationDecision } from '../utils/historyLogger';
@@ -61,6 +61,13 @@ export default function ApplicantDetail() {
   const [showInterviewForm, setShowInterviewForm] = useState(false);
   const [showOfferForm, setShowOfferForm] = useState(false);
   const [activeScorecardId, setActiveScorecardId] = useState<string | null>(null);
+  const [references, setReferences] = useState<any[]>([]);
+  const [showReferenceForm, setShowReferenceForm] = useState(false);
+  const [referenceForm, setReferenceForm] = useState({
+    ref_name: '',
+    ref_email: '',
+    relationship: ''
+  });
   const [scorecardForm, setScorecardForm] = useState({ rating: 0, feedback: '' });
   const generateMeetLink = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz';
@@ -100,12 +107,14 @@ export default function ApplicantDetail() {
   const loadData = async () => {
     if (!id) return;
     try {
-      const [applicantRes, interviewsRes] = await Promise.all([
+      const [applicantRes, interviewsRes, referencesRes] = await Promise.all([
         applicantsApi.getById(id),
         interviewsApi.getAll({ applicant_id: id }),
+        referencesApi.getByApplicant(id)
       ]);
       setApplicant(applicantRes.data);
       setInterviews(interviewsRes.data);
+      setReferences(referencesRes.data);
     } catch (error) {
       console.error('Failed to load applicant details:', error);
     } finally {
@@ -284,6 +293,24 @@ export default function ApplicantDetail() {
     } catch (error: any) {
       console.error('Failed to onboard employee:', error);
       addNotification('error', error.response?.data?.error || 'Failed to onboard employee');
+    }
+  };
+
+  const handleReferenceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    try {
+      await referencesApi.request({
+        applicant_id: id,
+        ...referenceForm
+      });
+      addNotification('success', 'Reference request sent successfully!');
+      setShowReferenceForm(false);
+      setReferenceForm({ ref_name: '', ref_email: '', relationship: '' });
+      loadData();
+    } catch (error) {
+      console.error('Failed to request reference:', error);
+      addNotification('error', 'Failed to send reference request');
     }
   };
 
@@ -565,6 +592,50 @@ export default function ApplicantDetail() {
               <div className="cover-letter-box">
                 {applicant.cover_letter}
               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="card reference-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Reference Checks</h2>
+            <button 
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowReferenceForm(true)}
+            >
+              Request Reference
+            </button>
+          </div>
+
+          {references.length === 0 ? (
+            <p className="text-muted text-center py-4">No references requested yet.</p>
+          ) : (
+            <div className="references-list">
+              {references.map((ref) => (
+                <div key={ref.id} className="reference-item">
+                  <div className="ref-item-header">
+                    <div>
+                      <h3 className="text-sm font-semibold">{ref.ref_name}</h3>
+                      <p className="text-xs text-muted">{ref.ref_email}</p>
+                    </div>
+                    <span className={`status-badge-small ${ref.status}`}>
+                      {ref.status}
+                    </span>
+                  </div>
+                  
+                  {ref.status === 'submitted' && ref.responses && (
+                    <div className="ref-response-preview">
+                      <div className="rating-small">
+                        <Star size={12} fill="#f59e0b" color="#f59e0b" />
+                        <span>Competency: {ref.responses.competency_rating}/5</span>
+                      </div>
+                      <p className="text-xs italic text-gray-400 line-clamp-2">
+                        "{ref.responses.strengths}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -910,16 +981,68 @@ export default function ApplicantDetail() {
         ))}
       </div>
 
-      <ConfirmationModal
-        isOpen={cancelInterviewId !== null}
-        onClose={() => setCancelInterviewId(null)}
-        onConfirm={handleConfirmCancelInterview}
-        title="Cancel Interview"
-        message="Are you sure you want to cancel this interview? This action cannot be undone and will notify the applicant."
-        confirmLabel="Yes, Cancel Interview"
-        cancelLabel="Keep Interview"
-        type="danger"
-      />
+      {/* Reference Request Modal */}
+      {showReferenceForm && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>Request Reference</h3>
+              <button onClick={() => setShowReferenceForm(false)} className="btn-icon">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleReferenceSubmit}>
+              <div className="form-group">
+                <label>Reference Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="form-input" 
+                  value={referenceForm.ref_name}
+                  onChange={e => setReferenceForm({...referenceForm, ref_name: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Reference Email</label>
+                <input 
+                  type="email" 
+                  required 
+                  className="form-input" 
+                  value={referenceForm.ref_email}
+                  onChange={e => setReferenceForm({...referenceForm, ref_email: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Relationship (Optional)</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Former Manager" 
+                  className="form-input" 
+                  value={referenceForm.relationship}
+                  onChange={e => setReferenceForm({...referenceForm, relationship: e.target.value})}
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowReferenceForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Send Request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Existing Confirmation Modals */}
+      {cancelInterviewId && (
+        <ConfirmationModal
+          isOpen={cancelInterviewId !== null}
+          title="Cancel Interview?"
+          message="Are you sure you want to cancel this interview? An automated email will be sent to the candidate."
+          confirmLabel="Yes, Cancel"
+          type="danger"
+          onConfirm={handleConfirmCancelInterview}
+          onClose={() => setCancelInterviewId(null)}
+        />
+      )}
 
       {activeScorecardId && (
         <div className="premium-modal-overlay">

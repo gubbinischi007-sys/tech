@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jobsApi } from '../services/api';
 import { logAction } from '../utils/historyLogger';
+import { useCompany } from '../contexts/CompanyContext';
 import './CreateJob.css';
 import StatusModal from '../components/StatusModal';
 
 export default function CreateJob() {
   const navigate = useNavigate();
+  const { company } = useCompany();
   const [formData, setFormData] = useState({
     title: '',
     department: '',
@@ -33,6 +35,18 @@ export default function CreateJob() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check verification status
+    if (company?.status !== 'approved') {
+      setStatusModal({
+        isOpen: true,
+        title: 'Verification Required',
+        message: 'Your company must be verified by a platform administrator before you can post jobs. Please wait for approval or contact support.',
+        type: 'error'
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -177,8 +191,8 @@ export default function CreateJob() {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Job'}
+            <button type="submit" className="btn btn-primary" disabled={loading || company?.status !== 'approved'}>
+              {loading ? 'Creating...' : company?.status !== 'approved' ? 'Verification Pending' : 'Create Job'}
             </button>
             <button
               type="button"

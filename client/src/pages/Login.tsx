@@ -14,11 +14,18 @@ export default function Login() {
   const { login, register } = useAuth();
 
   const initMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
-  const [selectedRole, setSelectedRole] = useState<'hr' | 'applicant' | null>(null);
+  const initRoleParam = searchParams.get('role');
+  const initRole = (initRoleParam === 'hr' || initRoleParam === 'applicant') ? initRoleParam : null;
+  
+  const [selectedRole, setSelectedRole] = useState<'hr' | 'applicant' | null>(initRole);
   const [viewMode, setViewMode] = useState<'login' | 'signup' | 'forgot_password'>(initMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 2-step HR gateway
+  const [hrStep, setHrStep] = useState<'pin' | 'form'>('pin');
+  const [validatedCompany, setValidatedCompany] = useState<{ id: string; name: string } | null>(null);
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -41,13 +48,55 @@ export default function Login() {
   const handleRoleSelect = (role: 'hr' | 'applicant') => {
     setSelectedRole(role);
     setViewMode(role === 'applicant' ? 'signup' : 'login');
+    setHrStep('pin');
+    setValidatedCompany(null);
     setFormData({ name: '', email: '', password: '', confirmPassword: '', roleTitle: '', companyPin: '' });
   };
 
   const handleBack = () => {
+    if (selectedRole === 'hr' && hrStep === 'form') {
+      // Go back to PIN step instead of role selection
+      setHrStep('pin');
+      setValidatedCompany(null);
+      setFormData(prev => ({ ...prev, email: '', password: '', confirmPassword: '', name: '', roleTitle: '' }));
+      return;
+    }
     setSelectedRole(null);
+    setHrStep('pin');
+    setValidatedCompany(null);
     setViewMode('login');
     setFormData({ name: '', email: '', password: '', confirmPassword: '', roleTitle: '', companyPin: '' });
+  };
+
+  /** Step 1: Validate Company PIN and advance to Step 2 */
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.companyPin.trim()) return;
+    setIsLoading(true);
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { data: company, error } = await supabase
+        .from('companies')
+        .select('id, name, status')
+        .eq('invite_code', formData.companyPin.trim())
+        .single();
+
+      if (error || !company) {
+        showError('Invalid Company PIN', 'No registered company found with this PIN. Please contact your administrator.');
+        return;
+      }
+      if (company.status !== 'approved') {
+        showError('Company Pending', `"${company.name}" has not yet been approved by the platform admin. Please check back later.`);
+        return;
+      }
+      // PIN is valid — advance to Step 2
+      setValidatedCompany({ id: company.id, name: company.name });
+      setHrStep('form');
+    } catch (err: any) {
+      showError('Validation Error', err?.message || 'Failed to validate Company PIN. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +160,6 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      // register() now signs up AND populates auth state — no extra login() needed
       const profile = await register({
         email: formData.email.trim(),
         password: formData.password.trim(),
@@ -120,7 +168,7 @@ export default function Login() {
         roleTitle: formData.roleTitle.trim() || undefined,
       });
 
-      // Redirect based on the returned profile role
+      // HR goes to CompanySetup to manage/join their workspace
       if (profile.role === 'hr') {
         navigate('/company-setup');
       } else {
@@ -222,64 +270,133 @@ export default function Login() {
                 <p className="card-desc">Browse openings, track your applications, and get hired.</p>
               </div>
             </div>
-          ) : (
-            /* Login / Signup Form */
+          ) : selectedRole === 'hr' && hrStep === 'pin' ? (
+            /* ── STEP 1: Company PIN Gateway ── */
             <div className="login-form">
               <button className="btn-back" onClick={handleBack}>
                 <ChevronLeft size={16} style={{ marginRight: '4px' }} />
                 Back
               </button>
 
+              <div className="form-header">
+                <div className="icon-box" style={{
+                  margin: '0 auto 1rem auto',
+                  backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                  color: '#6366f1',
+                  width: 'fit-content'
+                }}>
+                  <Building2 size={32} />
+                </div>
+                <h2 className="form-title">Enter Company PIN</h2>
+                <p className="form-subtitle">Enter your company's unique PIN to access the HR portal</p>
+              </div>
+
+              {/* Step indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.75rem' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>1</div>
+                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }} />
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280' }}>2</div>
+              </div>
+
+              <form onSubmit={handlePinSubmit}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="companyPin">Company PIN</label>
+                  <div style={{ position: 'relative' }}>
+                    <Building2 size={18} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    <input
+                      id="companyPin"
+                      type="password"
+                      className="form-input"
+                      style={{ paddingLeft: '2.5rem', letterSpacing: '0.2em', fontSize: '1.1rem' }}
+                      placeholder="Enter your company PIN"
+                      value={formData.companyPin}
+                      onChange={handleChange}
+                      autoFocus
+                      required
+                    />
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
+                    Your Company PIN was provided by the platform admin upon approval.
+                  </p>
+                </div>
+
+                <button type="submit" className="btn-primary" disabled={isLoading}
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
+                  {isLoading ? 'Verifying...' : 'Continue →'}
+                </button>
+              </form>
+
+              <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '10px' }}>
+                <h4 style={{ color: '#818cf8', margin: '0 0 0.4rem 0', fontSize: '0.85rem' }}>Don't have a PIN?</h4>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                  Your company must be registered and approved first.{' '}
+                  <Link to="/register-company" style={{ color: '#818cf8', textDecoration: 'underline' }}>Register Company →</Link>
+                </p>
+              </div>
+            </div>
+
+          ) : (
+            /* ── STEP 2: Sign In / Sign Up Forms (after PIN validated) ── */
+            <div className="login-form">
+              <button className="btn-back" onClick={handleBack}>
+                <ChevronLeft size={16} style={{ marginRight: '4px' }} />
+                Back
+              </button>
+
+              {/* Validated company banner */}
+              {validatedCompany && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+                  borderRadius: '10px', padding: '0.75rem 1rem', marginBottom: '1.25rem'
+                }}>
+                  <CheckCircle size={18} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <div>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>Company Verified</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{validatedCompany.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(16,185,129,0.2)', border: '1px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#10b981' }}>✓</div>
+                <div style={{ flex: 1, height: 2, background: 'linear-gradient(90deg, #10b981, #6366f1)', borderRadius: 2 }} />
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>2</div>
+              </div>
+
               {/* Icon + Title */}
               <div className="form-header">
                 <div className="icon-box" style={{
                   margin: '0 auto 1rem auto',
-                  backgroundColor: isHR ? 'rgba(99, 102, 241, 0.12)' : 'rgba(34, 197, 94, 0.12)',
-                  color: accentColor,
+                  backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                  color: '#6366f1',
                   width: 'fit-content'
                 }}>
-                  {isHR ? <ShieldCheck size={32} /> : <User size={32} />}
+                  <ShieldCheck size={32} />
                 </div>
                 <h2 className="form-title">
-                  {viewMode === 'login'
-                    ? (isHR ? 'Recruiter Sign In' : 'Candidate Sign In')
-                    : viewMode === 'signup'
-                      ? (isHR ? 'Create HR Account' : 'Create Account')
-                      : 'Reset Password'}
+                  {viewMode === 'login' ? 'Recruiter Sign In' : viewMode === 'signup' ? 'Create HR Account' : 'Reset Password'}
                 </h2>
                 <p className="form-subtitle">
-                  {viewMode === 'login' ? 'Enter your credentials to access your account' : viewMode === 'signup' ? 'Fill in your details to get started' : 'Enter your email to request a reset link'}
+                  {viewMode === 'login' ? 'Enter your credentials to access your workspace' : viewMode === 'signup' ? 'Fill in your details to get started' : 'Enter your email to request a reset link'}
                 </p>
               </div>
 
-              {/* Tab Toggle - Login / Sign Up */}
+              {/* Tab Toggle */}
               <div style={{
-                display: 'flex',
-                background: 'rgba(255,255,255,0.04)',
-                borderRadius: '10px',
-                padding: '4px',
-                marginBottom: '1.75rem',
-                border: '1px solid rgba(255,255,255,0.06)'
+                display: 'flex', background: 'rgba(255,255,255,0.04)', borderRadius: '10px',
+                padding: '4px', marginBottom: '1.75rem', border: '1px solid rgba(255,255,255,0.06)'
               }}>
                 {(['login', 'signup'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setViewMode(mode)}
+                  <button key={mode} type="button" onClick={() => setViewMode(mode)}
                     style={{
-                      flex: 1,
-                      padding: '0.5rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      transition: 'all 0.25s ease',
+                      flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none',
+                      cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.25s ease',
                       background: viewMode === mode ? accentGradient : 'transparent',
                       color: viewMode === mode ? 'white' : '#6b7280',
                       boxShadow: viewMode === mode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
-                    }}
-                  >
+                    }}>
                     {mode === 'login' ? 'Sign In' : 'Sign Up'}
                   </button>
                 ))}
@@ -288,26 +405,7 @@ export default function Login() {
               {/* ======= LOGIN FORM ======= */}
               {viewMode === 'login' && (
                 <form onSubmit={handleLoginSubmit}>
-                  {/* Company PIN for HR login */}
-                  {isHR && (
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="companyPin">Company PIN</label>
-                      <div style={{ position: 'relative' }}>
-                        <Building2 size={18} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                        <input
-                          id="companyPin"
-                          type="password"
-                          className="form-input"
-                          style={{ paddingLeft: '2.5rem' }}
-                          placeholder="4-digit company PIN"
-                          maxLength={4}
-                          value={formData.companyPin}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {/* PIN already validated in Step 1 */}
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="email">Email Address</label>
@@ -368,33 +466,18 @@ export default function Login() {
                   </div>
 
                   {isHR && (
-                    <>
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="roleTitle">Your Role Title</label>
-                        <div style={{ position: 'relative' }}>
-                          <Briefcase size={18} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                          <input
-                            id="roleTitle" type="text" className="form-input"
-                            style={{ paddingLeft: '2.5rem' }}
-                            placeholder="e.g. Senior Recruiter"
-                            value={formData.roleTitle} onChange={handleChange} required
-                          />
-                        </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="roleTitle">Your Role Title</label>
+                      <div style={{ position: 'relative' }}>
+                        <Briefcase size={18} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                        <input
+                          id="roleTitle" type="text" className="form-input"
+                          style={{ paddingLeft: '2.5rem' }}
+                          placeholder="e.g. Senior Recruiter"
+                          value={formData.roleTitle} onChange={handleChange} required
+                        />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="companyPin">Company PIN</label>
-                        <div style={{ position: 'relative' }}>
-                          <Building2 size={18} style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                          <input
-                            id="companyPin" type="password" className="form-input"
-                            style={{ paddingLeft: '2.5rem' }}
-                            placeholder="4-digit company PIN"
-                            maxLength={4}
-                            value={formData.companyPin} onChange={handleChange} required
-                          />
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   )}
 
                   <div className="form-group">

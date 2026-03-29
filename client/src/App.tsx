@@ -22,20 +22,23 @@ import CandidateInterviews from './pages/CandidateInterviews';
 import History from './pages/History';
 import CandidateEmails from './pages/CandidateEmails';
 import Employees from './pages/Employees';
+import RegisterCompany from './pages/RegisterCompany';
+import TrackApplication from './pages/TrackApplication';
 import CompanySetup from './pages/CompanySetup';
 import { useCompany } from './contexts/CompanyContext';
 import { useAuth } from './contexts/AuthContext';
+import PlatformAdmin from './pages/PlatformAdmin';
+import ReferenceForm from './pages/ReferenceForm';
+import AdminLogin from './pages/AdminLogin';
 
 /** Redirects HR users without a company to the company setup page */
 function CompanyGuard({ children }: { children: JSX.Element }) {
   const { user } = useAuth();
   const { company, loading } = useCompany();
 
-  // Still loading company info — let ProtectedRoute's spinner handle this
   if (loading) return null;
 
-  // HR user with no company → send to setup
-  if (user.role === 'hr' && !company) {
+  if (user.isAuthenticated && user.role !== 'super_admin' && !company && !loading) {
     return <Navigate to="/company-setup" replace />;
   }
 
@@ -48,9 +51,16 @@ function App() {
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/platform/login" element={<AdminLogin />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/public/jobs/:id" element={<PublicJobDetail />} />
       <Route path="/public/jobs/:id/apply" element={<ApplyJob />} />
+      <Route path="/reference-check/:token" element={<ReferenceForm />} />
+      <Route path="/register-company" element={<RegisterCompany />} />
+      <Route path="/track-application" element={<TrackApplication />} />
+
+      {/* Platform Admin route (Handles its own security checks and lock screens natively) */}
+      <Route path="/platform-admin" element={<PlatformAdmin />} />
 
       {/* Company Setup route (HR only, authenticated) */}
       <Route path="/company-setup" element={
@@ -73,7 +83,7 @@ function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
-      {/* Admin/HR routes — guarded by company check */}
+      {/* Admin/HR routes */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRole="hr">
           <CompanyGuard>

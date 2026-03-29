@@ -54,6 +54,17 @@ router.post('/', async (req, res) => {
   try {
     const input: CreateJobInput = req.body;
     const companyId = req.headers['x-company-id'];
+    
+    // Check if company is verified
+    if (companyId) {
+      const company = await get('SELECT status FROM companies WHERE id = ?', [companyId]);
+      if (!company || company.status !== 'approved') {
+        return res.status(403).json({ 
+          error: 'Action restricted. Your company must be verified by a platform administrator before posting jobs.' 
+        });
+      }
+    }
+
     const id = uuidv4();
     const now = new Date().toISOString();
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { interviewsApi } from '../services/api';
-import { Calendar, Video, MapPin, Download, CheckCircle, Clock, Users, ArrowLeft } from 'lucide-react';
+import { Calendar, Video, MapPin, Download, CheckCircle, Clock, Users, ArrowLeft, XCircle } from 'lucide-react';
 import './CandidateInterviews.css';
 import { Link } from 'react-router-dom';
 

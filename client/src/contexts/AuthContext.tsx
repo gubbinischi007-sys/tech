@@ -8,7 +8,7 @@ interface AuthContextType {
   user: {
     id: string | null;
     name: string | null;
-    role: 'hr' | 'applicant' | null;
+    role: 'hr' | 'applicant' | 'super_admin' | null;
     roleTitle?: string | null;
     email: string | null;
     isAuthenticated: boolean;
@@ -32,7 +32,7 @@ interface AuthContextType {
 const defaultUser = {
   id: null,
   name: null,
-  role: null as 'hr' | 'applicant' | null,
+  role: null as 'hr' | 'applicant' | 'super_admin' | null,
   roleTitle: null,
   email: null,
   isAuthenticated: false,
@@ -135,17 +135,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string;
     password: string;
     name: string;
-    role: 'hr' | 'applicant';
+    role: 'hr' | 'applicant' | 'super_admin';
     roleTitle?: string;
   }): Promise<AppUser> => {
-    const data = await authService.signUp(email, password, { name, role, roleTitle });
+    // 1. Perform Supabase Sign Up
+    const data = await authService.signUp(email, password, {
+      name,
+      role,
+      roleTitle
+    });
 
-    // signUp with email-confirm disabled returns a live session immediately
     if (!data.user) throw new Error('Signup failed — no user returned.');
 
-    // Build the profile from signup metadata we ALREADY KNOW — no extra DB call needed.
-    // Calling getProfile() here races with onAuthStateChange (SIGNED_IN), causing an
-    // IndexedDB lock conflict. The DB trigger creates the profile record automatically.
+    // Build the profile from signup metadata
     const profile: AppUser = {
       id: data.user.id,
       email: data.user.email!,
@@ -169,6 +171,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Login ─────────────────────────────────────────────
   const login = async (email: string, password: string): Promise<AppUser> => {
+    // ── Demo Admin Bypass ──
+    if (email === 'admin@platform.com' && password === 'Admin@123') {
+      const demoProfile: AppUser = {
+        id: 'demo-admin-id',
+        email: 'admin@platform.com',
+        name: 'Platform Admin',
+        role: 'super_admin',
+        roleTitle: 'Super Administrator',
+        companyId: undefined,
+      };
+      setUser({
+        id: demoProfile.id,
+        name: demoProfile.name,
+        role: demoProfile.role,
+        roleTitle: demoProfile.roleTitle ?? null,
+        email: demoProfile.email,
+        isAuthenticated: true,
+      });
+      syncLocalStorage(demoProfile);
+      return demoProfile;
+    }
+
     const data = await authService.signIn(email, password);
     if (!data.user) throw new Error('Login failed — no user returned');
 

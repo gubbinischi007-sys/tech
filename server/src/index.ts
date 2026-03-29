@@ -12,6 +12,8 @@ import { notificationRoutes } from './routes/notifications.js';
 import employeeRoutes from './routes/employees.js';
 import historyRoutes from './routes/history.js';
 import { matchDetailsRoutes } from './routes/matchDetails.js';
+import platformRoutes from './routes/platform.js';
+import referenceRoutes from './routes/references.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +40,8 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/employees', employeeRoutes);
 apiRouter.use('/history', historyRoutes);
 apiRouter.use('/match-details', matchDetailsRoutes);
+apiRouter.use('/platform', platformRoutes);
+apiRouter.use('/references', referenceRoutes);
 
 // Health check
 apiRouter.get('/health', (req, res) => {
