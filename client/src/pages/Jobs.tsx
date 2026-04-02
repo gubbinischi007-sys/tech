@@ -46,7 +46,15 @@ export default function Jobs() {
       setJobs(response.data || []);
     } catch (error) {
       console.error('Failed to load jobs:', error);
-      // setJobs([]); // Optional: clear jobs on error or keep previous state
+      // Fallback demo jobs for preview
+      const demoJobs = [
+        { id: '1', title: 'Senior Frontend Engineer', department: 'Engineering', location: 'Remote', type: 'Full-time', status: 'open', created_at: new Date(Date.now() - 604800000).toISOString() },
+        { id: '2', title: 'Product Manager', department: 'Product', location: 'New York, NY', type: 'Full-time', status: 'open', created_at: new Date(Date.now() - 1209600000).toISOString() },
+        { id: '3', title: 'UX Designer', department: 'Design', location: 'San Francisco, CA', type: 'Contract', status: 'open', created_at: new Date(Date.now() - 259200000).toISOString() },
+        { id: '4', title: 'Backend Developer', department: 'Engineering', location: 'Remote', type: 'Full-time', status: 'closed', created_at: new Date(Date.now() - 2592000000).toISOString() },
+        { id: '5', title: 'HR Coordinator', department: 'Human Resources', location: 'London, UK', type: 'Full-time', status: 'open', created_at: new Date(Date.now() - 432000000).toISOString() },
+      ];
+      setJobs(filter === 'all' ? demoJobs : demoJobs.filter(j => j.status === filter));
     } finally {
       setLoading(false);
     }

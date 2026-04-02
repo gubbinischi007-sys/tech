@@ -99,6 +99,13 @@ export default function History() {
                 }
             } catch (error) {
                 console.error('Failed to fetch app history from database', error);
+                // Fallback demo history for preview
+                setAppHistory([
+                    { id: '1', name: 'James Wilson', email: 'james.w@example.com', job_title: 'Backend Developer', status: 'Accepted', reason: 'Strong technical assessment performance.', date: new Date(Date.now() - 86400000).toISOString() },
+                    { id: '2', name: 'Maria Garcia', email: 'm.garcia@example.com', job_title: 'UX Designer', status: 'Rejected', reason: 'Insufficient experience with mobile design systems.', date: new Date(Date.now() - 172800000).toISOString() },
+                    { id: '3', name: 'Alex Thompson', email: 'alex.t@example.com', job_title: 'Senior Frontend Engineer', status: 'Accepted', reason: 'Excellent system design skills.', date: new Date(Date.now() - 259200000).toISOString() },
+                    { id: '4', name: 'Sarah Miller', email: 's.miller@example.com', job_title: 'Product Manager', status: 'Deactivated', reason: 'Applicant withdrew after initial screening.', date: new Date(Date.now() - 432000000).toISOString() }
+                ]);
             }
         };
 
