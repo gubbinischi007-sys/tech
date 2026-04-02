@@ -86,8 +86,8 @@ export default function Landing() {
                         <Link to="/track-application" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.95rem' }}>Track Application</Link>
                     </div>
                     <div className="nav-cta-group">
-                        <Link to="/login" className="nav-signin">Sign In</Link>
-                        <Link to="/login?mode=signup" className="nav-signup-btn">Get Started Free <ChevronRight size={14} /></Link>
+                        <Link to="/admin" className="nav-signin">View Demo</Link>
+                        <Link to="/admin" className="nav-signup-btn">Go to Dashboard <ChevronRight size={14} /></Link>
                     </div>
                 </div>
             </nav>
@@ -118,11 +118,11 @@ export default function Landing() {
                     </p>
 
                     <div className="hero-actions">
-                        <Link to="/login?mode=signup" className="btn-hero-primary">
-                            Start Hiring Free <ArrowRight size={18} />
+                        <Link to="/admin" className="btn-hero-primary">
+                            Explore Dashboard <ArrowRight size={18} />
                         </Link>
-                        <Link to="/login" className="btn-hero-secondary">
-                            Sign In to Dashboard
+                        <Link to="/admin" className="btn-hero-secondary">
+                            View HR Portal
                         </Link>
                     </div>
 
@@ -274,8 +274,8 @@ export default function Landing() {
                     <h2>Ready to Transform Your Hiring?</h2>
                     <p>Join hundreds of companies using SmartCruiter to hire faster, smarter, and better.</p>
                     <div className="cta-actions">
-                        <Link to="/login?mode=signup" className="btn-hero-primary">
-                            Get Started — It's Free <ArrowRight size={18} />
+                        <Link to="/admin" className="btn-hero-primary">
+                            Go to Dashboard — It's Free <ArrowRight size={18} />
                         </Link>
                     </div>
                     <div className="cta-features">
@@ -297,8 +297,8 @@ export default function Landing() {
                     </div>
                     <p className="footer-tagline">AI-Powered Recruitment Platform</p>
                     <div className="footer-links">
-                        <Link to="/login">Sign In</Link>
-                        <Link to="/login?mode=signup">Sign Up</Link>
+                        <Link to="/admin">Dashboard</Link>
+                        <Link to="/admin">HR Portal</Link>
                         <Link to="/track-application">Track Application</Link>
                         <Link to="/register-company">Register Company</Link>
                     </div>

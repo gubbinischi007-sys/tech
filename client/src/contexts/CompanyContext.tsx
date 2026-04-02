@@ -28,8 +28,15 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const [company, setCompany] = useState<Company | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [company, setCompany] = useState<Company | null>({
+        id: 'preview-company-id',
+        name: 'Smart Solutions Inc.',
+        slug: 'smart-solutions',
+        invite_code: 'SMART123',
+        plan: 'pro',
+        status: 'active'
+    });
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setCompanyId(company?.id || null);
@@ -68,13 +75,8 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        if (user.isAuthenticated) {
-            fetchCompany();
-        } else {
-            setCompany(null);
-            setLoading(false);
-        }
-    }, [user.id, user.isAuthenticated]);
+        // No-op for preview mode
+    }, []);
 
     const createCompany = async (name: string, slug: string, documentUrl?: string): Promise<Company> => {
         if (!user.id) throw new Error('Not authenticated');

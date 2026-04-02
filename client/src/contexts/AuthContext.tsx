@@ -30,12 +30,12 @@ interface AuthContextType {
 }
 
 const defaultUser = {
-  id: null,
-  name: null,
-  role: null as 'hr' | 'applicant' | 'super_admin' | null,
-  roleTitle: null,
-  email: null,
-  isAuthenticated: false,
+  id: 'preview-user-id',
+  name: 'Preview Master',
+  role: 'hr' as 'hr' | 'applicant' | 'super_admin' | null,
+  roleTitle: 'Hiring Manager',
+  email: 'preview@smartcruiter.app',
+  isAuthenticated: true,
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,66 +62,11 @@ function clearLocalStorage() {
 // ─────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState(defaultUser);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // No loading for preview mode
 
-  // On mount: restore session from Supabase (persists across refreshes)
+  // Session restoration disabled for preview
   useEffect(() => {
-    let mounted = true;
-
-    const restoreSession = async () => {
-      try {
-        const session = await authService.getSession();
-        if (session?.user && mounted) {
-          const profile = await authService.getProfile(session.user.id);
-          if (profile && mounted) {
-            setUser({
-              id: profile.id,
-              name: profile.name,
-              role: profile.role,
-              roleTitle: profile.roleTitle ?? null,
-              email: profile.email,
-              isAuthenticated: true,
-            });
-            syncLocalStorage(profile);
-          }
-        }
-      } catch (err) {
-        console.warn('Session restore failed:', err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    restoreSession();
-
-    // Listen for auth state changes (token refresh, sign-out, etc.)
-    // Skip SIGNED_IN if we're already authenticated — register() and login() handle that themselves
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        setUser(defaultUser);
-        clearLocalStorage();
-        if (mounted) setLoading(false);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Only refresh on token rotation — don't race with register/login
-        const profile = await authService.getProfile(session.user.id);
-        if (profile && mounted) {
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            role: profile.role,
-            roleTitle: profile.roleTitle ?? null,
-            email: profile.email,
-            isAuthenticated: true,
-          });
-          syncLocalStorage(profile);
-        }
-      }
-    });
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
+    // No-op for preview mode
   }, []);
 
   // ── Register — signs up AND populates the user state immediately ──
@@ -223,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('loginHistory', JSON.stringify(history));
       }
     }
-    await authService.signOut();
+    await authService.signOut().catch(() => {});
     setUser(defaultUser);
     clearLocalStorage();
   };

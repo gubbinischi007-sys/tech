@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users2, LogOut, History, UserCheck, Calendar, HelpCircle, Building2 } from 'lucide-react';
+import { Home, LayoutDashboard, Briefcase, Users2, LogOut, History, UserCheck, Calendar, HelpCircle, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompany } from '../contexts/CompanyContext';
 import { resetOnboarding } from './OnboardingTour';
@@ -23,6 +23,7 @@ export default function Layout() {
   };
 
   const navLinks = [
+    { path: '/', label: 'Home', icon: Home },
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admin/jobs', label: 'Jobs', icon: Briefcase },
     { path: '/admin/applicants', label: 'Applicants', icon: Users2 },
@@ -64,8 +65,8 @@ export default function Layout() {
             </Link>
             <div className="nav-links">
               {navLinks.map((link) => {
-                const isActive = link.path === '/admin/dashboard'
-                  ? location.pathname === '/admin/dashboard'
+                const isActive = (link.path === '/admin/dashboard' || link.path === '/')
+                  ? location.pathname === link.path
                   : location.pathname.startsWith(link.path);
 
                 return (

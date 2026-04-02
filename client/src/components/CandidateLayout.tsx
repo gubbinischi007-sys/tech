@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Briefcase, User, LogOut, Hexagon, Mail } from 'lucide-react';
+import { Home, Briefcase, User, LogOut, Hexagon, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import ProfileModal from './ProfileModal';
@@ -11,8 +11,8 @@ export default function CandidateLayout() {
     const { user, logout } = useAuth();
     const { unreadCount } = useNotification();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
     const navLinks = [
+        { path: '/', label: 'Home', icon: Home },
         { path: '/candidate/jobs', label: 'Browse Jobs', icon: Briefcase },
         { path: '/candidate/dashboard', label: 'My Applications', icon: User },
         { path: '/candidate/interviews', label: 'My Interviews', icon: Briefcase }, // using an icon, maybe Calendar
@@ -32,7 +32,9 @@ export default function CandidateLayout() {
                         </Link>
                         <div className="nav-links">
                             {navLinks.map((link: any) => {
-                                const isActive = location.pathname.startsWith(link.path);
+                                const isActive = link.path === '/' 
+                                    ? location.pathname === '/' 
+                                    : location.pathname.startsWith(link.path);
 
                                 return (
                                     <Link
