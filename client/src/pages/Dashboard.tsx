@@ -51,13 +51,13 @@ export default function Dashboard() {
         interviewsApi.getAll()
       ]);
 
-      if (results[0].status === 'fulfilled') {
+      if (results[0].status === 'fulfilled' && (results[0] as any).value.data?.totalJobs > 0) {
         setStats((results[0] as any).value.data);
       } else {
         // Fallback demo stats for preview mode
         setStats({
-          totalJobs: 12,
-          openJobs: 8,
+          totalJobs: 6,
+          openJobs: 5,
           totalApplicants: 142,
           recentApplicants: 24,
           scheduledInterviews: 15,
