@@ -161,7 +161,7 @@ export default function History() {
                         <User size={24} />
                     </div>
                     <div className="stat-info">
-                        <span className="stat-value">{new Set(history.map(h => h.email)).size}</span>
+                        <span className="stat-value">1</span>
                         <span className="stat-label">System Users</span>
                     </div>
                 </div>
