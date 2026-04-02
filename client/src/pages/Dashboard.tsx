@@ -58,9 +58,9 @@ export default function Dashboard() {
         setStats({
           totalJobs: 6,
           openJobs: 5,
-          totalApplicants: 142,
-          recentApplicants: 24,
-          scheduledInterviews: 15,
+          totalApplicants: 5,
+          recentApplicants: 3,
+          scheduledInterviews: 2,
           applicantsByStage: [
             { stage: 'Applied', count: 45 },
             { stage: 'Screening', count: 32 },
