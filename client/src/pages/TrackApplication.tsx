@@ -200,8 +200,8 @@ export default function TrackApplication() {
             {/* Top Navigation Bar */}
             <nav style={{ position: 'relative', zIndex: 10, padding: '1.25rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(8,12,20,0.8)', backdropFilter: 'blur(12px)' }}>
                 <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
-                    <img src="/logo.png" alt="SmartCruiter" style={{ width: 32, height: 32, borderRadius: 8 }} />
-                    <span style={{ color: 'white', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em' }}>SmartCruiter</span>
+                    <img src="/logo.png" alt="ApexRecruit" style={{ width: 32, height: 32, borderRadius: 8 }} />
+                    <span style={{ color: 'white', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em' }}>ApexRecruit</span>
                 </Link>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <Link to="/register-company" style={{ color: '#94a3b8', fontSize: '0.85rem', textDecoration: 'none', padding: '0.4rem 0.75rem', borderRadius: 6, transition: 'all 0.2s' }}

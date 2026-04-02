@@ -41,8 +41,8 @@ export default function Layout() {
         <div className="container">
           <div className="nav-content">
             <Link to="/admin/dashboard" className="logo">
-              <img src="/logo.png" alt="SmartCruiter" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} />
-              <span className="logo-text">SmartCruiter</span>
+              <img src="/logo.png" alt="ApexRecruit" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} />
+              <span className="logo-text">ApexRecruit</span>
               {company && (
                 <span style={{
                   display: 'inline-flex',

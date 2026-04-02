@@ -136,7 +136,7 @@ export default function PublicJobDetail() {
             {/* WhatsApp */}
             <button
               onClick={() => {
-                const text = `Check out this ${job.title} role at SmartCruiter! Apply here: ${window.location.href}`;
+                const text = `Check out this ${job.title} role at ApexRecruit! Apply here: ${window.location.href}`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
               }}
               className="share-btn whatsapp"

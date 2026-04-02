@@ -52,7 +52,7 @@ const testimonials = [
     {
         name: 'Sarah K.',
         role: 'Head of Talent, TechCorp',
-        text: 'SmartCruiter cut our time-to-hire by 60%. The multi-company portal is a game changer for our agency.',
+        text: 'ApexRecruit cut our time-to-hire by 60%. The multi-company portal is a game changer for our agency.',
         avatar: 'SK',
     },
     {
@@ -76,8 +76,8 @@ export default function Landing() {
             <nav className="landing-nav">
                 <div className="nav-inner">
                     <Link to="/" className="nav-logo">
-                        <img src="/logo.png" alt="SmartCruiter" />
-                        <span>SmartCruiter</span>
+                        <img src="/logo.png" alt="ApexRecruit" />
+                        <span>ApexRecruit</span>
                     </Link>
                     <div className="nav-links-landing">
                         <a href="#features">Features</a>
@@ -113,7 +113,7 @@ export default function Landing() {
                     </h1>
 
                     <p className="hero-subtitle">
-                        SmartCruiter is the all-in-one recruitment platform for modern HR teams.
+                        ApexRecruit is the all-in-one recruitment platform for modern HR teams.
                         Manage jobs, track applicants, schedule interviews, and make data-driven hiring decisions — all in one beautiful workspace.
                     </p>
 
@@ -141,7 +141,7 @@ export default function Landing() {
                     <div className="mockup-window">
                         <div className="mockup-titlebar">
                             <span className="dot red" /><span className="dot yellow" /><span className="dot green" />
-                            <span className="mockup-url">smartcruiter.app/admin/dashboard</span>
+                            <span className="mockup-url">apexrecruit.app/admin/dashboard</span>
                         </div>
                         <div className="mockup-body">
                             <div className="mock-sidebar">
@@ -196,7 +196,7 @@ export default function Landing() {
                     <div className="section-header">
                         <div className="section-badge">Everything You Need</div>
                         <h2>Recruitment, <span className="gradient-text">Reimagined</span></h2>
-                        <p>From posting your first job to making the hire — SmartCruiter handles everything with AI-powered precision.</p>
+                        <p>From posting your first job to making the hire — ApexRecruit handles everything with AI-powered precision.</p>
                     </div>
 
                     <div className="features-grid">
@@ -270,9 +270,9 @@ export default function Landing() {
             <section className="cta-section">
                 <div className="cta-inner">
                     <div className="cta-orb" />
-                    <img src="/logo.png" alt="SmartCruiter" className="cta-logo" />
+                    <img src="/logo.png" alt="ApexRecruit" className="cta-logo" />
                     <h2>Ready to Transform Your Hiring?</h2>
-                    <p>Join hundreds of companies using SmartCruiter to hire faster, smarter, and better.</p>
+                    <p>Join hundreds of companies using ApexRecruit to hire faster, smarter, and better.</p>
                     <div className="cta-actions">
                         <Link to="/admin" className="btn-hero-primary">
                             Go to Dashboard — It's Free <ArrowRight size={18} />
@@ -292,8 +292,8 @@ export default function Landing() {
             <footer className="landing-footer">
                 <div className="footer-inner">
                     <div className="footer-logo">
-                        <img src="/logo.png" alt="SmartCruiter" />
-                        <span>SmartCruiter</span>
+                        <img src="/logo.png" alt="ApexRecruit" />
+                        <span>ApexRecruit</span>
                     </div>
                     <p className="footer-tagline">AI-Powered Recruitment Platform</p>
                     <div className="footer-links">
@@ -302,7 +302,7 @@ export default function Landing() {
                         <Link to="/track-application">Track Application</Link>
                         <Link to="/register-company">Register Company</Link>
                     </div>
-                    <p className="footer-copy">© 2026 SmartCruiter. Built with ❤️ for modern HR teams.</p>
+                    <p className="footer-copy">© 2026 ApexRecruit. Built with ❤️ for modern HR teams.</p>
                 </div>
             </footer>
         </div>

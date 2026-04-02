@@ -9,7 +9,7 @@ interface OnboardingTourProps {
     force?: boolean;
 }
 
-const TOUR_KEY = 'smartcruiter_onboarding_done';
+const TOUR_KEY = 'apexrecruit_onboarding_done';
 
 export default function OnboardingTour({ onComplete, force = false }: OnboardingTourProps) {
     const driverRef = useRef<ReturnType<typeof driver> | null>(null);
@@ -28,7 +28,7 @@ export default function OnboardingTour({ onComplete, force = false }: Onboarding
                 smoothScroll: true,
                 stagePadding: 8,
                 stageRadius: 10,
-                popoverClass: 'smartcruiter-tour-popover',
+                popoverClass: 'apexrecruit-tour-popover',
                 progressText: '{{current}} of {{total}}',
                 nextBtnText: 'Next →',
                 prevBtnText: '← Back',
@@ -42,7 +42,7 @@ export default function OnboardingTour({ onComplete, force = false }: Onboarding
                     {
                         element: '.logo',
                         popover: {
-                            title: '👋 Welcome to SmartCruiter!',
+                            title: '👋 Welcome to ApexRecruit!',
                             description: 'Your AI-powered recruitment platform. Let\'s take a quick tour to get you up to speed.',
                             side: 'bottom',
                             align: 'start',

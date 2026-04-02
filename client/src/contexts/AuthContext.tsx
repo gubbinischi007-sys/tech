@@ -34,7 +34,7 @@ const defaultUser = {
   name: 'Preview Master',
   role: 'hr' as 'hr' | 'applicant' | 'super_admin' | null,
   roleTitle: 'Hiring Manager',
-  email: 'preview@smartcruiter.app',
+  email: 'preview@apexrecruit.app',
   isAuthenticated: true,
 };
 

@@ -90,7 +90,7 @@ export default function CompanySetup() {
             <div className="company-setup-content">
                 {/* Header */}
                 <div className="company-setup-header">
-                    <img src="/logo.png" alt="SmartCruiter" style={{ width: 48, height: 48, borderRadius: 10 }} />
+                    <img src="/logo.png" alt="ApexRecruit" style={{ width: 48, height: 48, borderRadius: 10 }} />
                     <h1>Set Up Your Workspace</h1>
                     <p>Initialize an approved company workspace or join an existing team.</p>
                 </div>

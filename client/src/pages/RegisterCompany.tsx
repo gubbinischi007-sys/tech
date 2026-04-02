@@ -90,7 +90,7 @@ export default function RegisterCompany() {
                 // Engage the Automated Scanning UI!
                 setIsScanning(true);
                 setScanProgress(0);
-                setScanLogs(['Initializing SmartCruiter Auto-Scraper v2.4...']);
+                setScanLogs(['Initializing ApexRecruit Auto-Scraper v2.4...']);
 
                 const fileExt = selectedFile.name.split('.').pop();
                 const fileName = `${slug}-${Date.now()}.${fileExt}`;
@@ -198,9 +198,9 @@ export default function RegisterCompany() {
 
             <div className="company-setup-content">
                 <div className="company-setup-header" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-                    <img src="/logo.png" alt="SmartCruiter" style={{ width: 48, height: 48, borderRadius: 10 }} />
+                    <img src="/logo.png" alt="ApexRecruit" style={{ width: 48, height: 48, borderRadius: 10 }} />
                     <h1>Register Your Enterprise</h1>
-                    <p>Submit your organization to become an official employer on SmartCruiter.</p>
+                    <p>Submit your organization to become an official employer on ApexRecruit.</p>
                 </div>
 
                 {isScanning && !isSuccess ? (
@@ -322,7 +322,7 @@ export default function RegisterCompany() {
                                 <label>Workspace Slug <span style={{ color: '#64748b', fontWeight: 400 }}>(URL-friendly name)</span></label>
                                 <div style={{ position: 'relative' }}>
                                     <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '0.875rem', pointerEvents: 'none' }}>
-                                        smartcruiter.app/
+                                        apexrecruit.app/
                                     </span>
                                     <input
                                         id="companySlug"
