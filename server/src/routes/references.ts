@@ -35,7 +35,7 @@ router.post('/request', async (req, res) => {
       <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #6366f1;">Professional Reference Request</h2>
           <p>Hello ${ref_name},</p>
-          <p><strong>${applicant.first_name} ${applicant.last_name}</strong> has listed you as a professional reference for their job application at Smart-Cruiter.</p>
+          <p><strong>${applicant.first_name} ${applicant.last_name}</strong> has listed you as a professional reference for their job application at ApexRecruit.</p>
           <p>We would appreciate your candid feedback regarding their professional background and skills. The process only takes 2-3 minutes.</p>
           <p style="margin-top: 30px;">
               <a href="${referenceUrl}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">

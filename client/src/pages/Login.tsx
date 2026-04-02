@@ -221,7 +221,7 @@ export default function Login() {
           <div>
             <span className="intro-badge">
               <Sparkles size={14} style={{ marginRight: '6px', color: '#eab308' }} />
-              Smart Recruitment Platform
+              ApexRecruit Platform
             </span>
             <h1 className="intro-title">
               Hiring <br />

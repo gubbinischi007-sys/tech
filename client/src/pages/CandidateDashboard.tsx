@@ -63,7 +63,7 @@ export default function CandidateDashboard() {
                     id: app.id,
                     jobId: app.job_id,
                     position: app.job_title || 'Unknown Position',
-                    company: 'Smart-Cruiter Inc',
+                    company: 'ApexRecruit Inc',
                     stage: app.stage,
                     date: new Date(app.applied_at || app.created_at || Date.now()).toLocaleDateString(),
                     status: app.status || 'active',

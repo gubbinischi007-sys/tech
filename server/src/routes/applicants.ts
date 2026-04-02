@@ -572,7 +572,7 @@ router.patch('/:id/offer', async (req, res) => {
         subject: `Job Offer from Smart - Cruiter`,
         html: `
     < h2 > Congratulations ${existing.first_name} !</h2>
-      < p > We are thrilled to offer you the position of < strong > ${existing.job_title} </strong> at Smart-Cruiter Inc.</p >
+      < p > We are thrilled to offer you the position of < strong > ${existing.job_title} </strong> at ApexRecruit Inc.</p >
 
         <h3>Offer Details: </h3>
           < ul >

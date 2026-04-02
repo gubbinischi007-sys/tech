@@ -35,7 +35,7 @@ router.post('/bulk-acceptance', async (req, res) => {
           <h2>Congratulations ${applicant.first_name}!</h2>
           <p>We are pleased to inform you that you have been accepted for the position of <strong>${applicant.job_title}</strong>.</p>
           <p>Our HR team will be in touch with you shortly regarding next steps.</p>
-          <p>Best regards,<br>Smart-Cruiter Team</p>
+          <p>Best regards,<br>ApexRecruit Team</p>
         `,
       })
     );
@@ -83,7 +83,7 @@ router.post('/bulk-rejection', async (req, res) => {
           <h2>Thank you for your interest, ${applicant.first_name}</h2>
           <p>We appreciate you taking the time to apply for the position of <strong>${applicant.job_title}</strong>.</p>
           <p>After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future opportunities that match your skills and experience.</p>
-          <p>Best regards,<br>Smart-Cruiter Team</p>
+          <p>Best regards,<br>ApexRecruit Team</p>
         `,
       })
     );
@@ -142,7 +142,7 @@ router.post('/duplicate-warning', async (req, res) => {
           <p style="color: red; font-weight: bold;">Please do not repeat this again.</p>
           <p><strong>If you continue to submit duplicate applications, you will be added to our blacklist and barred from future opportunities.</strong></p>
           <p>We have merged your duplicate profiles into a single record for now.</p>
-          <p>Regards,<br>Smart-Cruiter Compliance Team</p>
+          <p>Regards,<br>ApexRecruit Compliance Team</p>
         `,
       })
     );
@@ -196,7 +196,7 @@ router.post('/identity-warning', async (req, res) => {
             </p>
             <p>Please log in to your portal and re-upload the correct document immediately to avoid disqualification from this and future roles.</p>
             <p>If you believe this is an error, please contact our support team.</p>
-            <p>Regards,<br>Smart-Cruiter Security Team</p>
+            <p>Regards,<br>ApexRecruit Security Team</p>
           </div>
         `,
       })

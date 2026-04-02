@@ -192,7 +192,7 @@ export default function CandidateEmails() {
                     const history = historyRes.data || [];
 
                     // Match by job title since notification usually has it
-                    // Extract job title from subject: "Job Offer from Smart-Cruiter" -> might need better matching
+                    // Extract job title from subject: "Job Offer from ApexRecruit" -> might need better matching
                     // Actually, notifications usually contain the job title in the message
                     const historyRecord = history.find((h: any) =>
                         selectedEmail.message.includes(h.job_title) ||
@@ -260,7 +260,7 @@ export default function CandidateEmails() {
 
                             {/* 2. Sender */}
                             <p className="text-xl text-gray-200 font-medium mb-2">
-                                Smart-Cruiter Team
+                                ApexRecruit Team
                             </p>
 
                             {/* 3. Date and Time */}
@@ -300,7 +300,7 @@ export default function CandidateEmails() {
                                         )
                                         .replace('Offer Details:', '<div style="margin-top: 20px; margin-bottom: 10px; font-weight: bold; font-size: 1.1em; font-family: \'Outfit\', sans-serif; color: white;">Offer Details:</div>')
                                         .replace('Best regards,', '<div style="margin-top: 40px; margin-bottom: 8px; color: #cbd5e1;">Best regards,</div>')
-                                        .replace(/(The Smart-Cruiter[\w\s-]*Team)/g, '<div style="color: #f8fafc; font-weight: 500;">$1</div>')
+                                        .replace(/(The ApexRecruit[\w\s-]*Team)/g, '<div style="color: #f8fafc; font-weight: 500;">$1</div>')
                                         // Remove the generic "View Offer Details" button to keep user on this page (using custom actions instead)
                                         .replace(/<a\s+[^>]*>[\s\S]*?View Offer Details[\s\S]*?<\/a>/gi, '')
                                         // Inject rules below Joining Date (which is the end of the UL)
@@ -706,7 +706,7 @@ export default function CandidateEmails() {
 
                                         {/* Line 3: Sender */}
                                         <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                                            From: <span className="text-gray-300 font-medium">Smart-Cruiter Team</span>
+                                            From: <span className="text-gray-300 font-medium">ApexRecruit Team</span>
                                         </p>
 
                                         {/* Line 4: Action */}

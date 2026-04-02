@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
     // Auto-generate meeting link for online interviews if missing
     let finalMeetingLink = input.meeting_link;
     if ((!input.type || input.type === 'online') && !finalMeetingLink) {
-      finalMeetingLink = `https://meet.smartcruiter.com/${id.split('-')[0]}`;
+      finalMeetingLink = `https://meet.apexrecruit.com/${id.split('-')[0]}`;
     }
 
     await run(
@@ -130,13 +130,13 @@ router.post('/', async (req, res) => {
       ],
       startInputType: 'utc',
       duration: { hours: 1, minutes: 0 },
-      title: `Interview: ${job.title} at SmartCruiter`,
+      title: `Interview: ${job.title} at ApexRecruit`,
       description: `Interview for ${job.title} position.\nNotes: ${input.notes || ''}`,
       location: finalMeetingLink || 'Our Main Office',
       url: finalMeetingLink || '',
       status: 'CONFIRMED',
       busyStatus: 'BUSY',
-      organizer: { name: 'SmartCruiter HR', email: 'hr@smartcruiter.com' },
+      organizer: { name: 'ApexRecruit HR', email: 'hr@apexrecruit.com' },
       attendees: [
         { name: `${applicant.first_name} ${applicant.last_name}`, email: applicant.email, rsvp: true, role: 'REQ-PARTICIPANT' }
       ]

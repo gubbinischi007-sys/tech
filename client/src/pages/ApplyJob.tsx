@@ -155,7 +155,7 @@ export default function ApplyJob() {
       setResumeFile(file);
       setResumeFile(file);
       // Even though we upload, set the URL placeholder for DB so it knows a file is attached
-      setFormData(prev => ({ ...prev, resume_url: `https://storage.smart-cruiter.com/resumes/${file.name}` }));
+      setFormData(prev => ({ ...prev, resume_url: `https://storage.apexrecruit.com/resumes/${file.name}` }));
     }
   };
 

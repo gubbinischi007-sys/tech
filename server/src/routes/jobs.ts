@@ -177,10 +177,10 @@ router.delete('/:id', async (req, res) => {
         html: `
           <div style="font-family: Arial, sans-serif; color: #333;">
             <p>Dear ${applicant.first_name},</p>
-            <p>Thank you for your interest in the <strong>${job.title}</strong> position at SmartCruiter.</p>
+            <p>Thank you for your interest in the <strong>${job.title}</strong> position at ApexRecruit.</p>
             <p>We are writing to inform you that this position has been closed and is no longer available.</p>
             <p>We appreciate the time you took to apply and assume your interest in future roles.</p>
-            <p>Best regards,<br>The SmartCruiter Recruitment Team</p>
+            <p>Best regards,<br>The ApexRecruit Recruitment Team</p>
           </div>
         `
       }));
