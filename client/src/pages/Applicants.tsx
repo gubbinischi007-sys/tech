@@ -83,12 +83,12 @@ export default function Applicants() {
     } catch (error) {
       console.error('Failed to load applicants:', error);
       // Fallback demo applicants
-      const demoApplicants = [
-        { id: '1', first_name: 'Sarah', last_name: 'Chen', email: 'sarah.c@example.com', stage: 'shortlisted', job_id: '1', job_title: 'Senior Frontend Engineer', applied_at: new Date(Date.now() - 172800000).toISOString(), resume_url: 'resume_sarah.pdf' },
-        { id: '2', first_name: 'Rajan', last_name: 'Mehta', email: 'rajan.m@example.com', stage: 'applied', job_id: '2', job_title: 'Product Manager', applied_at: new Date(Date.now() - 345600000).toISOString(), resume_url: 'resume_rajan.pdf' },
-        { id: '3', first_name: 'Priya', last_name: 'Lin', email: 'priya.l@example.com', stage: 'recommended', job_id: '3', job_title: 'UX Designer', applied_at: new Date(Date.now() - 518400000).toISOString(), resume_url: 'resume_priya.pdf' },
-        { id: '4', first_name: 'David', last_name: 'Scott', email: 'david.s@example.com', stage: 'hired', job_id: '1', job_title: 'Senior Frontend Engineer', applied_at: new Date(Date.now() - 1209600000).toISOString(), resume_url: 'resume_david.pdf' },
-        { id: '5', first_name: 'Elena', last_name: 'Voz', email: 'elena.v@example.com', stage: 'rejected', job_id: '4', job_title: 'Backend Developer', applied_at: new Date(Date.now() - 2592000000).toISOString(), resume_url: 'resume_elena.pdf' },
+      const demoApplicants: any[] = [
+        { id: '1', first_name: 'Sarah', last_name: 'Chen', email: 'sarah.c@example.com', stage: 'shortlisted', job_id: '1', job_title: 'Senior Frontend Engineer', applied_at: new Date(Date.now() - 172800000).toISOString(), resume_url: 'resume_sarah.pdf', mock_score: 94 },
+        { id: '2', first_name: 'Rajan', last_name: 'Mehta', email: 'rajan.m@example.com', stage: 'applied', job_id: '2', job_title: 'Product Manager', applied_at: new Date(Date.now() - 345600000).toISOString(), resume_url: 'resume_rajan.pdf', mock_score: 82 },
+        { id: '3', first_name: 'Priya', last_name: 'Lin', email: 'priya.l@example.com', stage: 'recommended', job_id: '3', job_title: 'UX Designer', applied_at: new Date(Date.now() - 518400000).toISOString(), resume_url: 'resume_priya.pdf', mock_score: 75 },
+        { id: '4', first_name: 'David', last_name: 'Scott', email: 'david.s@example.com', stage: 'hired', job_id: '1', job_title: 'Senior Frontend Engineer', applied_at: new Date(Date.now() - 1209600000).toISOString(), resume_url: 'resume_david.pdf', mock_score: 88 },
+        { id: '5', first_name: 'Elena', last_name: 'Voz', email: 'elena.v@example.com', stage: 'rejected', job_id: '4', job_title: 'Backend Developer', applied_at: new Date(Date.now() - 2592000000).toISOString(), resume_url: 'resume_elena.pdf', mock_score: 42 },
       ];
       setApplicants(demoApplicants);
     } finally {
@@ -592,7 +592,9 @@ export default function Applicants() {
                       const hasEducation = ['school', 'pu', 'pre university', 'ug', 'pg', 'bachelor', 'master', 'degree', 'diploma', 'university'].some(term => applicantText.includes(term));
                       const hasExperience = ['experience', 'intern', 'years', 'worked', 'career'].some(term => applicantText.includes(term));
 
-                      if (isLocalOwner) {
+                      if ((applicant as any).mock_score !== undefined) {
+                        score = (applicant as any).mock_score;
+                      } else if (isLocalOwner) {
                         if (jdKeywords.length > 0) {
                           const matchRatio = (jdKeywords.length - missingSkills.length) / jdKeywords.length;
                           score = Math.round(100 * matchRatio);
